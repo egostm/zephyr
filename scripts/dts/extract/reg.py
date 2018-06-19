@@ -55,6 +55,7 @@ class DTReg(DTDirective):
         l_addr = [convert_string_to_label(post_label)]
         l_size = ["SIZE"]
 
+        prop_struct = []
         while props:
             prop_def = {}
             prop_alias = {}
@@ -98,7 +99,12 @@ class DTReg(DTDirective):
                     prop_alias['_'.join(alias_addr)] = '_'.join(l_base + l_addr)
                     prop_alias['_'.join(alias_size)] = '_'.join(l_base + l_size)
 
+
+            prop_struct.append(hex(addr))
+            prop_struct.append(int(size))
+
             insert_defs(node_address, prop_def, prop_alias)
+            insert_structs(node_address, 'reg', prop_struct)
 
             # increment index for definition creation
             index += 1

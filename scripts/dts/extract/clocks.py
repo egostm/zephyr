@@ -31,7 +31,9 @@ class DTClocks(DTDirective):
         nr_clock_cells = 0
         clock_provider_node_address = ''
         clock_provider = {}
+        prop_structs = []
         for cell in clocks:
+            cell_struct = {}
             if clock_cell_index == 0:
                 if cell not in phandles:
                     raise Exception(
@@ -53,6 +55,7 @@ class DTClocks(DTDirective):
                 clock_cells_names = clock_provider_bindings.get(
                     '#cells', ['ID', 'CELL1',  "CELL2", "CELL3"])
                 clock_cells = []
+                cell_struct['labels'] = clock_cells_names
             else:
                 clock_cells.append(cell)
             clock_cell_index += 1
@@ -61,7 +64,8 @@ class DTClocks(DTDirective):
                 #####################################
                 prop_def = {}
                 prop_alias = {}
-
+                cell_struct['data'] = []
+                cell_struct['labels'] = clock_cells_names
                 # Legacy clocks definitions by extract_cells
                 for i, cell in enumerate(clock_cells):
                     if i >= len(clock_cells_names):
@@ -77,6 +81,7 @@ class DTClocks(DTDirective):
                             clock_consumer_label, clock_cells_string,
                             clock_cell_name, str(clock_index)])
                     prop_def[clock_label] = str(cell)
+                    cell_struct['data'].append(str(cell))
                     # alias
                     if i < nr_clock_cells:
                         # clocks info for first clock
@@ -113,9 +118,11 @@ class DTClocks(DTDirective):
                             prop_alias[clock_alias_label] = clock_label
 
                 insert_defs(node_address, prop_def, prop_alias)
-
                 clock_cell_index = 0
                 clock_index += 1
+                prop_structs.append(cell_struct)
+
+        insert_structs(node_address, 'clock', prop_structs)
 
     ##
     # @brief Extract clocks related directives

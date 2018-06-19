@@ -38,12 +38,17 @@ class DTPinCtrl(DTDirective):
         def_prefix = def_label.split('_')
 
         prop_def = {}
+        prop_struct = []
         for p in prop_list:
             pin_node_address = phandles[p]
             pin_subnode = '/'.join(pin_node_address.split('/')[-1:])
             cell_yaml = yaml[get_compat(pin_node_address)]
             cell_prefix = 'PINMUX'
             post_fix = []
+
+            cell_struct = {}
+            cell_struct['data'] = []
+            cell_struct['labels'] = cell_yaml.get('#cells')
 
             if cell_prefix is not None:
                 post_fix.append(cell_prefix)
@@ -64,8 +69,13 @@ class DTPinCtrl(DTDirective):
                         prop_def[key_label] = cells
                         prop_def[func_label] = \
                             reduced[subnode]['props'][cells]
+                        cell_struct['data'].append(prop_def[key_label])
+                        cell_struct['data'].append(prop_def[func_label])
+
+                    prop_struct.append(cell_struct)
 
         insert_defs(node_address, prop_def, {})
+        insert_structs(node_address, 'pinctrl', prop_struct)
 
 ##
 # @brief Management information for pinctrl-[x].

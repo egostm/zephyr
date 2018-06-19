@@ -6,6 +6,7 @@
 #
 
 from collections import defaultdict
+import pprint
 
 # globals
 phandles = {}
@@ -132,6 +133,18 @@ def insert_defs(node_address, new_defs, new_aliases):
         new_defs['aliases'] = new_aliases
         defs[node_address] = new_defs
 
+def insert_structs(node_address, deflabel, new_structs):
+
+    if node_address in structs:
+        if deflabel in structs[node_address] and isinstance(structs[node_address][deflabel], dict):
+            structs[node_address][deflabel].update(new_structs)
+        else:
+            structs[node_address][deflabel] = new_structs
+    else:
+        structs[node_address] = {}
+        structs[node_address][deflabel] = new_structs
+
+    return
 
 def find_node_by_path(nodes, path):
     d = nodes

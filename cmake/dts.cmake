@@ -108,6 +108,7 @@ if(CONFIG_HAS_DTS)
     ${DTS_FIXUPS}
     --keyvalue ${GENERATED_DTS_BOARD_CONF}
     --include ${GENERATED_DTS_BOARD_H}
+    --structs ${PROJECT_BINARY_DIR}
     )
 
   # Run extract_dts_includes.py to create a .conf and a header file that can be

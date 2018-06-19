@@ -51,6 +51,7 @@ class DTInterrupts(DTDirective):
         l_base = def_label.split('/')
         index = 0
 
+        prop_structs = []
         while props:
             prop_def = {}
             prop_alias = {}
@@ -64,13 +65,20 @@ class DTInterrupts(DTDirective):
             cell_yaml = yaml[get_compat(irq_parent)]
             l_cell_prefix = ['IRQ']
 
+            cell_struct = {}
+            cell_struct['labels'] = cell_yaml['#cells']
+            cell_struct['data'] = []
+
             for i in range(reduced[irq_parent]['props']['#interrupt-cells']):
                 l_cell_name = [cell_yaml['#cells'][i].upper()]
                 if l_cell_name == l_cell_prefix:
                     l_cell_name = []
 
                 l_fqn = '_'.join(l_base + l_cell_prefix + l_idx + l_cell_name)
-                prop_def[l_fqn] = props.pop(0)
+                val = props.pop(0)
+                prop_def[l_fqn] = val
+                cell_struct['data'].append(val)
+
                 if len(name):
                     alias_list = l_base + l_cell_prefix + name + l_cell_name
                     prop_alias['_'.join(alias_list)] = l_fqn
@@ -83,6 +91,9 @@ class DTInterrupts(DTDirective):
 
             index += 1
             insert_defs(node_address, prop_def, prop_alias)
+            prop_structs.append(cell_struct)
+
+        insert_structs(node_address, 'interrupts', prop_structs)
 
 ##
 # @brief Management information for interrupts.

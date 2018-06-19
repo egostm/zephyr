@@ -36,6 +36,7 @@ class DTDefault(DTDirective):
                 if isinstance(prop_value, str):
                     prop_value = "\"" + prop_value + "\""
                 prop_def[label + '_' + str(i)] = prop_value
+            insert_structs(node_address, prop, prop_values)
         else:
             prop_name = convert_string_to_label(prop)
             label = def_label + '_' + prop_name
@@ -46,6 +47,7 @@ class DTDefault(DTDirective):
             if isinstance(prop_values, str):
                 prop_values = "\"" + prop_values + "\""
             prop_def[label] = prop_values
+            insert_structs(node_address, prop, prop_values)
 
             # generate defs for node aliases
             if node_address in aliases:

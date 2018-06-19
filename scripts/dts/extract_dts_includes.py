@@ -16,6 +16,7 @@ import yaml
 import argparse
 import collections
 from copy import deepcopy
+import pprint
 
 from devicetree import parse_file
 from extract.globals import *
@@ -90,6 +91,7 @@ def extract_reg_prop(node_address, names, def_label, div, post_label):
     l_addr = [convert_string_to_label(post_label)]
     l_size = ["SIZE"]
 
+    prop_struct = []
     while props:
         prop_def = {}
         prop_alias = {}
@@ -133,7 +135,11 @@ def extract_reg_prop(node_address, names, def_label, div, post_label):
                 prop_alias['_'.join(alias_addr)] = '_'.join(l_base + l_addr)
                 prop_alias['_'.join(alias_size)] = '_'.join(l_base + l_size)
 
+        prop_struct.append(hex(addr))
+        prop_struct.append(int(size/div))
+
         insert_defs(node_address, prop_def, prop_alias)
+        insert_structs(node_address, 'reg', prop_struct)
 
         # increment index for definition creation
         index += 1
@@ -143,6 +149,7 @@ def extract_controller(node_address, yaml, prop, prop_values, index, def_label, 
 
     prop_def = {}
     prop_alias = {}
+    prop_struct = {}
 
     # get controller node (referenced via phandle)
     cell_parent = phandles[prop_values[0]]
@@ -179,13 +186,16 @@ def extract_controller(node_address, yaml, prop, prop_values, index, def_label, 
             generation = ''
 
         if 'use-prop-name' in generation:
-            l_cellname = convert_string_to_label(prop + '_' + 'controller')
+            l_controller = str(prop + '-' + 'controller')
+            l_cellname = convert_string_to_label(l_controller)
         else:
-            l_cellname = convert_string_to_label(generic + '_' + 'controller')
+            l_controller = str(generic + '-' + 'controller')
+            l_cellname = convert_string_to_label(l_controller)
 
         label = l_base + [l_cellname] + l_idx
 
         prop_def['_'.join(label)] = "\"" + l_cell + "\""
+        prop_struct = "\"" + l_cell + "\""
 
         #generate defs also if node is referenced as an alias in dts
         if node_address in aliases:
@@ -196,6 +206,7 @@ def extract_controller(node_address, yaml, prop, prop_values, index, def_label, 
                 prop_alias['_'.join(alias)] = '_'.join(label)
 
         insert_defs(node_address, prop_def, prop_alias)
+        insert_structs(node_address, l_controller, prop_struct)
 
     # prop off phandle + num_cells to get to next list item
     prop_values = prop_values[num_cells+1:]
@@ -208,6 +219,8 @@ def extract_controller(node_address, yaml, prop, prop_values, index, def_label, 
 
 def extract_cells(node_address, yaml, prop, prop_values, names, index,
                   def_label, generic):
+
+    cell_struct = {}
 
     cell_parent = phandles[prop_values.pop(0)]
 
@@ -222,6 +235,9 @@ def extract_cells(node_address, yaml, prop, prop_values, names, index,
         name = names.pop(0).upper()
     except:
         name = []
+
+    cell_struct['data'] = []
+    cell_struct['labels'] = cell_yaml['#cells']
 
     # Get number of cells per element of current property
     for k in reduced[cell_parent]['props'].keys():
@@ -258,7 +274,11 @@ def extract_cells(node_address, yaml, prop, prop_values, names, index,
         else:
             label = l_base + l_cell + l_cellname + l_idx
         label_name = l_base + name + l_cellname
-        prop_def['_'.join(label)] = prop_values.pop(0)
+
+        val = prop_values.pop(0)
+        cell_struct['data'].append(val)
+        prop_def['_'.join(label)] = val
+
         if len(name):
             prop_alias['_'.join(label_name)] = '_'.join(label)
 
@@ -270,6 +290,10 @@ def extract_cells(node_address, yaml, prop, prop_values, names, index,
                 prop_alias['_'.join(alias)] = '_'.join(label)
 
         insert_defs(node_address, prop_def, prop_alias)
+        if 'use-prop-name' in generation:
+            insert_structs(node_address, prop, cell_struct)
+        else:
+            insert_structs(node_address, generic, cell_struct)
 
     # recurse if we have anything left
     if len(prop_values):
@@ -289,6 +313,7 @@ def extract_single(node_address, yaml, prop, key, def_label):
             if isinstance(p, str):
                 p = "\"" + p + "\""
             prop_def[label + '_' + str(i)] = p
+        insert_structs(node_address, key, prop)
     else:
         k = convert_string_to_label(key)
         label = def_label + '_' + k
@@ -299,6 +324,7 @@ def extract_single(node_address, yaml, prop, key, def_label):
         if isinstance(prop, str):
             prop = "\"" + prop + "\""
         prop_def[label] = prop
+        insert_structs(node_address, key, prop)
 
         # generate defs for node aliases
         if node_address in aliases:
@@ -402,6 +428,10 @@ def extract_property(node_compat, yaml, node_address, prop, prop_val, names,
     else:
         default.extract(node_address, yaml, prop, names, def_label)
 
+def init_node_struct(reduced, root_node_address, sub_node_address,
+                              yaml, y_sub):
+
+    insert_structs(sub_node_address, 'dts_path', sub_node_address)
 
 def extract_node_include_info(reduced, root_node_address, sub_node_address,
                               yaml, y_sub):
@@ -423,6 +453,9 @@ def extract_node_include_info(reduced, root_node_address, sub_node_address,
             label_override = convert_string_to_label(node['props']['label'])
         except KeyError:
             pass
+
+    init_node_struct(reduced, root_node_address, sub_node_address,
+                                  yaml, y_sub)
 
     # check to see if we need to process the properties
     for k, v in y_node['properties'].items():
@@ -730,6 +763,41 @@ def generate_node_definitions(yaml_list):
     return defs
 
 
+def generate_structs(args):
+
+    struct_dict = {}
+    # Generate structure information here
+    #
+    # structs structure is:
+    # node_address:
+    #              prop_0:
+    #                     single value -or- list -or- list of dicts
+    #              prop_1:
+    #                     single value -or- list -or- list of dicts
+    #              ...
+    #              ...
+    # single value: Just a single piece of data (int or string)
+    # list: array of int or string
+    # list of dicts: array of other structs
+    #
+    # skip items with None for compat.  These are 'special' (flash, etc)
+    # need to run those through chosen node to see if they match and if
+    # something should be done.
+    #
+
+    # iterate over the structs and reconfigure it to collate by compat
+    for k,v in structs.items():
+        compat = get_compat(k)
+        if compat is None:
+            continue
+        if compat not in struct_dict:
+            struct_dict[compat] = []
+        struct_dict[compat].append(v)
+
+    # now we can process it most efficiently
+    pprint.pprint(struct_dict)
+    return
+
 def parse_arguments():
     rdh = argparse.RawDescriptionHelpFormatter
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=rdh)
@@ -737,6 +805,7 @@ def parse_arguments():
     parser.add_argument("-d", "--dts", nargs=1, required=True, help="DTS file")
     parser.add_argument("-y", "--yaml", nargs=1, required=True,
                         help="YAML file")
+    parser.add_argument("-s", "--structs", nargs=1)
     parser.add_argument("-f", "--fixup", nargs='+',
                         help="Fixup file(s), we allow multiple")
     parser.add_argument("-i", "--include", nargs=1, required=True,
@@ -763,6 +832,9 @@ def main():
 
      # generate config and include file
     generate_keyvalue_file(args.keyvalue[0])
+
+    #if args.structs:
+    generate_structs(args)
 
     generate_include_file(args.include[0], args.fixup)
 
