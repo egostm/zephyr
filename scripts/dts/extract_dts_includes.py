@@ -17,6 +17,7 @@ import argparse
 import collections
 from copy import deepcopy
 import pprint
+import json
 
 from devicetree import parse_file
 from extract.globals import *
@@ -763,8 +764,11 @@ def generate_node_definitions(yaml_list):
     return defs
 
 
-def generate_structs(args):
+def generate_struct_file(struct_file):
+    with open(struct_file, "w") as fd:
+        output_struct_lines(fd)
 
+def output_struct_lines(fd):
     struct_dict = {}
     # Generate structure information here
     #
@@ -795,7 +799,8 @@ def generate_structs(args):
         struct_dict[compat].append(v)
 
     # now we can process it most efficiently
-    pprint.pprint(struct_dict)
+    #pprint.pprint(struct_dict)
+    json.dump(struct_dict, fd)
     return
 
 def parse_arguments():
@@ -805,7 +810,8 @@ def parse_arguments():
     parser.add_argument("-d", "--dts", nargs=1, required=True, help="DTS file")
     parser.add_argument("-y", "--yaml", nargs=1, required=True,
                         help="YAML file")
-    parser.add_argument("-s", "--structs", nargs=1)
+    parser.add_argument("-s", "--structs", nargs=1, required=True,
+                        help="Generate struct file for the build system")
     parser.add_argument("-f", "--fixup", nargs='+',
                         help="Fixup file(s), we allow multiple")
     parser.add_argument("-i", "--include", nargs=1, required=True,
@@ -834,10 +840,10 @@ def main():
     generate_keyvalue_file(args.keyvalue[0])
 
     #if args.structs:
-    generate_structs(args)
+    #generate_structs(args)
 
     generate_include_file(args.include[0], args.fixup)
-
+    generate_struct_file(args.structs[0])
 
 if __name__ == '__main__':
     main()
