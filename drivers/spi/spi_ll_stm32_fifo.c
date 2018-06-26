@@ -6,7 +6,7 @@
 
 /** Compile if at least one device is activated
  * @code{.codegen}
- * codegen.edevice_tree_compatible_gating('st,stm32-spi')
+ * codegen.edevice_tree_compatible_gating('st,stm32-spi-fifo')
  * @endcode{.codegen}
  */
 /** @code{.codeins}@endcode */
@@ -486,27 +486,36 @@ static int spi_stm32_init(struct device *dev)
 
 /**
  * @code{.codegen}
- * codegen.import_module('declare_template')
+ * codegen.edevice_tree_set_compatible('st,stm32-spi-fifo')
+ * codegen.import_module('declare')
  *
- * device_data = ( 'spi_stm32_data',
- * """
- * 	SPI_CONTEXT_INIT_LOCK(st_stm32_spi_${node_index}_data, ctx),
- * 	SPI_CONTEXT_INIT_SYNC(st_stm32_spi_${node_index}_data, ctx),
- * """
+ * # static struct spi_stm32_data st_stm32_spi_fifo_<node_idx>_data = {
+ * # 	SPI_CONTEXT_INIT_LOCK(st_stm32_spi_fifo_<node_idx>_data, ctx),
+ * # 	SPI_CONTEXT_INIT_SYNC(st_stm32_spi_fifo_<node_idx>_data, ctx),
+ * # };
+ *
+ * device_data = ( ['spi_stm32_data',
+ *      {'string': ['SPI_CONTEXT_INIT_LOCK(st_stm32_spi_fifo_', 'index', '_data, ctx)']},
+ *      {'string': ['SPI_CONTEXT_INIT_SYNC(st_stm32_spi_fifo_', 'index', '_data, ctx)']}]
  * )
  *
+ * # static const struct spi_stm32_config st_stm32_spi_fifo_<node_idx>_config = {
+ * # 	.spi = (SPI_TypeDef *)@reg/0,
+ * # 	.pclken.bus = @clock/bus,
+ * # 	.pclken.enr = @clock/bits,
+ * # #ifdef CONFIG_SPI_STM32_INTERRUPT
+ * # 	.irq_config = spi_stm32_<node_idx>_config_irq,
+ * # #endif
+ * # };
  *
- * device_config = ( 'spi_stm32_config',
- * """
- *      .spi = (SPI_TypeDef *)${@reg/0},
- *      .pclken.bus = ${@clock/bus},
- *      .pclken.enr = ${@clock/bits},
- * #ifdef CONFIG_SPI_STM32_INTERRUPT
- *      .irq_config = st_stm32_spi_${node_index}_config_irq,
- * #endif
- * """)
+ * device_config = ( ['spi_stm32_config',
+ *       {'field': '.spi', 'value': '@reg/0', 'cast': '(SPI_TypeDef *)'},
+ *       {'field': '.pclken.bus', 'value': '@clock/bus'},
+ *       {'field': '.pclken.enr', 'value': '@clock/bits'},
+ *       {'string': ['.irq_config = st_stm32_spi_fifo_', 'index', '_config_irq'], 'flag': 'CONFIG_SPI_STM32_INTERRUPT'}]
+ * )
  *
- * declare_template.device_declare('st,stm32-spi',
+ * declare.device_declare('st,stm32-spi-fifo',
  * 'CONFIG_SPI_INIT_PRIORITY',
  * 'POST_KERNEL',
  * {'irq_func':'spi_stm32_isr','irq_flag': 'CONFIG_SPI_STM32_INTERRUPT'},
@@ -515,7 +524,7 @@ static int spi_stm32_init(struct device *dev)
  * device_data,
  * device_config
  * )
- *
+ * codegen.edevice_tree_unset_compatible()
  * @endcode{.codegen}
  */
 /** @code{.codeins}@endcode */
