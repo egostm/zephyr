@@ -21,6 +21,7 @@ from .config import ConfigMixin
 from .cmake import CMakeMixin
 from .zephyr import ZephyrMixin
 from .devicetree import DeviceTreeMixin
+from .edevicetree import EDeviceTreeMixin
 from .include import IncludeMixin
 from .log import LogMixin
 from .error import ErrorMixin, Error
@@ -31,7 +32,7 @@ from .redirectable import RedirectableMixin
 class CodeGenerator(OptionsMixin, GenericMixin, ConfigMixin,
                     CMakeMixin, ZephyrMixin, DeviceTreeMixin, GuardMixin,
                     IncludeMixin, LogMixin, ErrorMixin, OutputMixin,
-                    ImportMixin, RedirectableMixin):
+                    EDeviceTreeMixin, ImportMixin, RedirectableMixin):
 
     def __init__(self, processor, globals={},
                  output_file=None, snippet_file = None):

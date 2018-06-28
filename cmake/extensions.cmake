@@ -438,6 +438,7 @@ function(target_sources_codegen
       -D "CMAKE_COMPILER_IS_GNUCXX=${CMAKE_COMPILER_IS_GNUCXX}"
       -D "GENERATED_DTS_BOARD_H=${GENERATED_DTS_BOARD_H}"
       -D "GENERATED_DTS_BOARD_CONF=${GENERATED_DTS_BOARD_CONF}"
+      -D "GENERATED_DTS_BOARD_EDTS_DB=${GENERATED_DTS_BOARD_EDTS_DB}"
       --input "${template_file}"
       --output "${generated_file}"
       --log "${CMAKE_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/CodeGen.log"
