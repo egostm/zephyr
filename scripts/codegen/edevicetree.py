@@ -118,9 +118,14 @@ class EDeviceTreeMixin(object):
         property_value = property_access_point
         for key in property_path.strip("'").split('/'):
             if isinstance(property_value, list):
-                # TODO take into account prop with more than 1 elements of cell_size > 1
-                if isinstance(property_value[0], dict):
-                    property_value = property_value[0]
+                if len(property_value) > 1:
+                    try:
+                        property_value = property_value[int(key)]
+                    except ValueError:
+                        pass
+                else:
+                    if isinstance(property_value[0], dict):
+                        property_value = property_value[0]
             try:
                 property_value = property_value[str(key)]
             except TypeError:
@@ -129,10 +134,14 @@ class EDeviceTreeMixin(object):
                     # we should have a dict
                     if isinstance(property_value, dict):
                         # look for key in labels
-                        for x in range(0, len(property_value['labels'])):
-                            if property_value['labels'][x] == key:
-                                property_value = property_value['data'][x]
-                                break
+                        try:
+                            for x in range(0, len(property_value['labels'])):
+                                if property_value['labels'][x] == key:
+                                    property_value = property_value['data'][x]
+                                    break
+                        except KeyError:
+                            # Looked everywhere property is not there
+                            return None
                     else:
                         return "Dict was expected here"
         if property_value is None:

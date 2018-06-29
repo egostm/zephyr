@@ -37,8 +37,6 @@ def device_declare(compatible, init_prio_flag, kernel_level, irq_func,
         dev_idx = codegen.label_to_index(node_label)
         _dev_name = codegen.device_tree_device_instance_name(dev_idx)
         _config_irq = codegen.device_tree_node_struct_name(dev_idx, 'config_irq')
-        _irq = codegen.edevice_tree_node_property(dev_idx, 'interrupts/irq')
-        _irq_prio = codegen.edevice_tree_node_property(dev_idx, 'interrupts/priority')
         _drv_name = codegen.edevice_tree_node_property(dev_idx, 'label')
         _data = codegen.device_tree_node_struct_name(dev_idx, 'data')
         _config_info = codegen.device_tree_node_struct_name(dev_idx, 'config')
@@ -50,12 +48,7 @@ def device_declare(compatible, init_prio_flag, kernel_level, irq_func,
            codegen.outl('DEVICE_DECLARE({});'.format(_dev_name))
            codegen.outl('static void {}(struct device *dev)'.format(_config_irq))
            codegen.outl('{')
-           codegen.outl('\tIRQ_CONNECT({},'.format(_irq))
-           codegen.outl('\t\t{},'.format(_irq_prio))
-           codegen.outl('\t\t{},'.format(_isr['irq_func']))
-           codegen.outl('\t\tDEVICE_GET({}),'.format(_dev_name))
-           codegen.outl('\t\t0);')
-           codegen.outl('\tirq_enable({});'.format(_irq))
+           device_generate_irq_bootstrap(dev_idx, _isr, _dev_name)
            codegen.outl('}')
            codegen.outl('')
         #
@@ -111,6 +104,28 @@ def device_generate_struct(type_of_struct, _dev_idx, _struct):
 
     # Perform the substitution and display the string
     codegen.out('{}'.format(Template(_struct[1]).safe_substitute(mapping)))
-
     codegen.outl('};')
     codegen.outl('')
+
+def device_generate_irq_bootstrap(dev_idx, isr, dev_name):
+
+    irq_list = codegen.edevice_tree_node_property(dev_idx, 'interrupts')
+    irq_names = codegen.edevice_tree_node_property(dev_idx, 'interrupt-names')
+
+    try:
+        irq_labels = irq_list[0]['labels']
+    except KeyErrror:
+        msg("No IRQ labels")
+
+    for i in range (0, len(irq_list)):
+        i_num = codegen.edevice_tree_node_property(dev_idx, 'interrupts/' + str(i) + '/irq')
+        i_prio = codegen.edevice_tree_node_property(dev_idx, 'interrupts/' + str(i) + '/priority')
+        codegen.outl('\tIRQ_CONNECT({},'.format(i_num))
+        codegen.outl('\t\t{},'.format(i_prio))
+        if irq_names is not None:
+            codegen.outl('\t\t{}_{},'.format(isr['irq_func'], irq_names[i]))
+        else:
+            codegen.outl('\t\t{},'.format(isr['irq_func']))
+        codegen.outl('\t\tDEVICE_GET({}),'.format(dev_name))
+        codegen.outl('\t\t0);')
+        codegen.outl('\tirq_enable({});'.format(i_num))
