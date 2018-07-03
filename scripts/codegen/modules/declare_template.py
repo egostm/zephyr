@@ -44,14 +44,16 @@ def device_declare(compatibles, init_prio_flag, kernel_level, irq_func,
         codegen.outl('\n#ifdef CONFIG_{}\n'.format(_drv_name.strip('"')))
 
         # config irq
-        if codegen.config_property(_isr['irq_flag'], 0):
-           codegen.outl('DEVICE_DECLARE({});'.format(_dev_name))
-           codegen.outl('static void {}(struct device *dev)'.format(_config_irq))
-           codegen.outl('{')
-           device_generate_irq_bootstrap(dev_idx, _isr, _dev_name)
-           codegen.outl('}')
-           codegen.outl('')
-        #
+        if _isr is not None:
+            codegen.outl('#ifdef {}'.format(_isr['irq_flag']))
+            codegen.outl('DEVICE_DECLARE({});'.format(_dev_name))
+            codegen.outl('static void {}(struct device *dev)'.format(_config_irq))
+            codegen.outl('{')
+            device_generate_irq_bootstrap(dev_idx, _isr, _dev_name)
+            codegen.outl('}')
+            codegen.outl('#endif /* {} */'.format(_isr['irq_flag']))
+            codegen.outl('')
+
         # config info
         device_generate_struct('config', dev_idx, _config_struct)
 
@@ -106,7 +108,6 @@ def device_generate_struct(type_of_struct, _dev_idx, _struct):
                 dt_path = element.strip('@')
                 mapping[element] = codegen.edevice_tree_node_property(dev_idx, dt_path)
 
-        pprint.pprint("mapping: {}".format(mapping))
         # Update default Template 'braced' finder to support
         # valid characters for device tree property names
         Template.pattern = re.compile(DEVICE_TREE_SUB_PATTERN, re.IGNORECASE|re.VERBOSE)
