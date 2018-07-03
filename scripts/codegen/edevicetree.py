@@ -47,10 +47,20 @@ class EDeviceTreeMixin(object):
                 dts = json.loads(dts_fd.read())
                 self._edts = dts
 
+    ##
+    # @brief Get the compatible dict of nodes defined by board
+    #
+    # @return dict of compatibles defined by board
+    #
     def _edevice_tree_compatibles(self):
         self._edevice_tree_assure()
         return self._edts
 
+    ##
+    # @brief Get the compatible list defined by board
+    #
+    # @return list of compatibles defined by board
+    #
     def _edevice_tree_compatibles_list(self):
         compatibles_list = []
         compatibles = self._edevice_tree_compatibles()
@@ -58,32 +68,73 @@ class EDeviceTreeMixin(object):
             compatibles_list.append(item)
         return compatibles_list
 
-    def edevice_tree_set_compatible(self, compatible):
-        self._compatible = compatible
+    ##
+    # @brief Set the compatible(s) that will be used by a driver
+    #
+    # These compatible will be used for driver generation
+    # All compatibles will be used to find compatible nodes
+    # If more than one compatible is delacred by board, the first one provided
+    # by driver will be used as prefix string for driver code generation
+    #
+    # @return N/A
+    #
+    def edevice_tree_set_drivers_compatibles(self, drivers_compatibles):
+        self._compatibles = []
+        if not isinstance(drivers_compatibles , list):
+            # TODO: check that drivers_compatible are of the same type
+            drivers_compatibles = [drivers_compatibles]
+        # Populate compatibles with only the compatibles declared by board
+        for compat in drivers_compatibles:
+            if compat in self._edevice_tree_compatibles_list():
+                self._compatibles.append(compat)
 
-    def edevice_tree_unset_compatible(self):
-        self._compatible = None
+    ##
+    # @brief Unset compatible(s)
+    #
+    # @return N/A
+    #
+    def edevice_tree_unset_drivers_compatibles(self):
+        self._compatibles = None
 
-    def edevice_tree_compatible_nodes(self, compatible_to_check="<unset>"):
+    ##
+    # @brief Get the list of device nodes compatibles with compatible list
+    #        defined by the drivers
+    #
+    # @return list of compatible device nodes
+    #
+    def edevice_tree_compatible_nodes(self):
+        compatible_nodes = []
         self._edevice_tree_assure()
-        if compatible_to_check == "<unset>":
-            compatible = self._compatible
-        else:
-            compatible = compatible_to_check
-        if compatible is None:
+        drivers_compatibles = self._compatibles
+        pprint.pprint("drivers_compatibles: {}".format(drivers_compatibles))
+        if drivers_compatibles is None:
             return "No compatible set"
-        compatible_nodes = self._edts.get(compatible)
+        for compatible in drivers_compatibles:
+            if compatible in self._edevice_tree_compatibles_list():
+                # get nodes per comaptible
+                for node in self._edts.get(compatible):
+                    compatible_nodes.append(node)
+        pprint.pprint("compatible_nodes: {}".format(compatible_nodes))
         return compatible_nodes
 
-
-
-    def edevice_tree_compatible_gating(self, compatible="<unset>"):
+    ##
+    # @brief Control the driver instance generation
+    #
+    # @param: driver_compatibles List of compatibles supported by the driver
+    #
+    # @return NA
+    #
+    def edevice_tree_compatible_gating(self, driver_compatibles="<unset>"):
         self.generator_globals['_generate_code'] = False
-        if compatible == "<unset>":
+        if driver_compatibles == "<unset>":
             return "Error: No compatible provided"
-        self.outl("/* Guard({}) */".format(compatible))
-        if compatible in  self._edevice_tree_compatibles_list():
-            self.generator_globals['_generate_code'] = True
+        self.outl("/* Guard({}) */".format(driver_compatibles))
+        if not isinstance(driver_compatibles, list):
+            driver_compatibles = [driver_compatibles]
+        for driver_compat in driver_compatibles:
+            if driver_compat in  self._edevice_tree_compatibles_list():
+                self.generator_globals['_generate_code'] = True
+                break
 
 
     ##
@@ -91,10 +142,12 @@ class EDeviceTreeMixin(object):
     #
     # @return list of activated devices labels
     #
-    def edevice_tree_compatible_labels(self, default="<unset>"):
+    def edevice_tree_compatible_labels(self):
         compatible_labels = []
         compatible_nodes = self.edevice_tree_compatible_nodes()
+        pprint.pprint("compatible_nodes: {}".format(compatible_nodes))
         for node in compatible_nodes:
+            pprint.pprint("node: {}".format(node))
             compatible_labels.append(node['label'])
         return compatible_labels
 
@@ -108,7 +161,6 @@ class EDeviceTreeMixin(object):
     #                      (e.g. 'reg/0', 'interrupts/prio', 'label', ...)
     # @return property value as given in generated_dts_board.json
     #
-
     def edevice_tree_node_property(self, device_label, property_path, default="<unset>"):
         nodes = self.edevice_tree_compatible_nodes()
         for node in nodes:
@@ -154,14 +206,15 @@ class EDeviceTreeMixin(object):
     ##
     # @brief Get the name of a compatible instance.
     #
-    # Generates an unique name for a compatible instance.
-    #
+    # Generates an unique name for a compatible instance. If multiple compatibles
+    # were defined, use the first one
     #
     # @param device_index Index of device
     # @return instance name (e.g. st_stm32_spi_fifo_1)
     #
     def device_tree_device_instance_name(self, device_index):
-        return "{}_{}".format(self._device_tree_strings(self._compatible), device_index)
+        compatible_string = self._compatibles[0]
+        return "{}_{}".format(self._device_tree_strings(compatible_string), device_index)
 
     ##
     # @brief Get the name of a driver structure.

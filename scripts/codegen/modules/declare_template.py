@@ -20,10 +20,10 @@ DEVICE_TREE_SUB_PATTERN='''
 )
 '''
 
-def device_declare(compatible, init_prio_flag, kernel_level, irq_func,
+def device_declare(compatibles, init_prio_flag, kernel_level, irq_func,
                     init_func, api, data_struct, config_struct):
 
-    codegen.edevice_tree_set_compatible(compatible)
+    codegen.edevice_tree_set_drivers_compatibles(compatibles)
 
     _prio = init_prio_flag
     _level = kernel_level
@@ -70,6 +70,8 @@ def device_declare(compatible, init_prio_flag, kernel_level, irq_func,
         codegen.outl('\t&{});'.format(_api))
         codegen.outl('')
         codegen.outl('#endif /* CONFIG_{} */\n'.format(_drv_name.strip('"')))
+
+    codegen.edevice_tree_unset_drivers_compatibles()
 
 
 def device_generate_struct(type_of_struct, _dev_idx, _struct):

@@ -486,7 +486,6 @@ static int spi_stm32_init(struct device *dev)
 
 /**
  * @code{.codegen}
- * codegen.edevice_tree_set_compatible('st,stm32-spi-fifo')
  * codegen.import_module('declare')
  *
  * # static struct spi_stm32_data st_stm32_spi_fifo_<node_idx>_data = {
@@ -524,7 +523,7 @@ static int spi_stm32_init(struct device *dev)
  * device_data,
  * device_config
  * )
- * codegen.edevice_tree_unset_compatible()
+ *
  * @endcode{.codegen}
  */
 /** @code{.codeins}@endcode */

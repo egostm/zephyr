@@ -8,7 +8,7 @@ import codegen
 def device_declare(compatible, init_prio_flag, kernel_level, irq_func,
                     init_func, api, data_struct, config_struct):
 
-    codegen.edevice_tree_set_compatible(compatible)
+    codegen.edevice_tree_set_drivers_compatibles(compatible)
 
     _prio = codegen.config_property(init_prio_flag, 0)
     _level = kernel_level
