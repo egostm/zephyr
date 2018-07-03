@@ -15,7 +15,7 @@ DEVICE_TREE_SUB_PATTERN='''
 \$(?:
   (?P<escaped>\$) |   # Escape sequence of two delimiters
   (?P<named>[_a-z][_a-z0-9]*)      |   # delimiter and a Python identifier
-  {(?P<braced>[@,._+?/#a-zA-Z0-9]*)}   |   # delimiter and a braced identifier
+  {(?P<braced>[@,._+?/#a-zA-Z0-9-]*)}   |   # delimiter and a braced identifier
   (?P<invalid>)              # Other ill-formed delimiter exprs
 )
 '''
@@ -77,8 +77,13 @@ def device_declare(compatibles, init_prio_flag, kernel_level, irq_func,
 def device_generate_struct(type_of_struct, _dev_idx, _struct):
 
     dev_idx = _dev_idx
-    struct = _struct
     mapping = {}
+
+    # convert _struct into a list. Struct might have only on
+    if type(_struct) is str:
+        _struct = [_struct]
+    else:
+        _struct = list(_struct)
 
     if type_of_struct == 'config':
         codegen.out('static const struct {} {} = {{'.format(_struct[0],
@@ -89,23 +94,26 @@ def device_generate_struct(type_of_struct, _dev_idx, _struct):
     else:
         msg("Not expected")
 
-    # Find elements to subsitute in given string
-    elements_to_substitute = re.findall('\$\{(.*?)\}', _struct[1])
+    if len(_struct) > 1:
+        # Find elements to subsitute in given string
+        elements_to_substitute = re.findall('\$\{(.*?)\}', _struct[1])
 
-    # Fill mapping dict with subsitutes to elemments
-    for element in elements_to_substitute:
-        if element == 'node_index':
-            mapping[element] = dev_idx
-        else:
-            dt_path = element.strip('@')
-            mapping[element] = codegen.edevice_tree_node_property(dev_idx, dt_path)
+        # Fill mapping dict with subsitutes to elemments
+        for element in elements_to_substitute:
+            if element == 'node_index':
+                mapping[element] = dev_idx
+            else:
+                dt_path = element.strip('@')
+                mapping[element] = codegen.edevice_tree_node_property(dev_idx, dt_path)
 
-    # Update default Template 'braced' finder to support
-    # valid characters for device tree property names
-    Template.pattern = re.compile(DEVICE_TREE_SUB_PATTERN, re.IGNORECASE|re.VERBOSE)
+        pprint.pprint("mapping: {}".format(mapping))
+        # Update default Template 'braced' finder to support
+        # valid characters for device tree property names
+        Template.pattern = re.compile(DEVICE_TREE_SUB_PATTERN, re.IGNORECASE|re.VERBOSE)
 
-    # Perform the substitution and display the string
-    codegen.out('{}'.format(Template(_struct[1]).safe_substitute(mapping)))
+        # Perform the substitution and display the string
+        codegen.out('{}'.format(Template(_struct[1]).safe_substitute(mapping)))
+
     codegen.outl('};')
     codegen.outl('')
 

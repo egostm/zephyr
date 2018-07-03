@@ -106,7 +106,6 @@ class EDeviceTreeMixin(object):
         compatible_nodes = []
         self._edevice_tree_assure()
         drivers_compatibles = self._compatibles
-        pprint.pprint("drivers_compatibles: {}".format(drivers_compatibles))
         if drivers_compatibles is None:
             return "No compatible set"
         for compatible in drivers_compatibles:
@@ -114,7 +113,6 @@ class EDeviceTreeMixin(object):
                 # get nodes per comaptible
                 for node in self._edts.get(compatible):
                     compatible_nodes.append(node)
-        pprint.pprint("compatible_nodes: {}".format(compatible_nodes))
         return compatible_nodes
 
     ##
@@ -145,9 +143,7 @@ class EDeviceTreeMixin(object):
     def edevice_tree_compatible_labels(self):
         compatible_labels = []
         compatible_nodes = self.edevice_tree_compatible_nodes()
-        pprint.pprint("compatible_nodes: {}".format(compatible_nodes))
         for node in compatible_nodes:
-            pprint.pprint("node: {}".format(node))
             compatible_labels.append(node['label'])
         return compatible_labels
 
@@ -178,6 +174,9 @@ class EDeviceTreeMixin(object):
                 else:
                     if isinstance(property_value[0], dict):
                         property_value = property_value[0]
+            if isinstance(property_value, int) or isinstance(property_value, str):
+                # We had what we wanted
+                return property_value
             try:
                 property_value = property_value[str(key)]
             except TypeError:
