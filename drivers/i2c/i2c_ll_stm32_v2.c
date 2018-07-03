@@ -309,7 +309,7 @@ end:
 	stm32_i2c_master_mode_end(dev);
 }
 
-static int stm32_i2c_error(struct device *dev)
+static int stm32_i2c_isr_error(struct device *dev)
 {
 	const struct i2c_stm32_config *cfg = DEV_CFG(dev);
 	struct i2c_stm32_data *data = DEV_DATA(dev);
@@ -341,25 +341,25 @@ end:
 }
 
 #ifdef CONFIG_I2C_STM32_COMBINED_INTERRUPT
-void stm32_i2c_combined_isr(void *arg)
+void stm32_i2c_isr_combined(void *arg)
 {
 	struct device *dev = (struct device *) arg;
 
-	if (stm32_i2c_error(dev)) {
+	if (stm32_i2c_isr_error(dev)) {
 		return;
 	}
-	stm32_i2c_event(dev);
+	stm32_i2c_isr_event(dev);
 }
 #else
 
-void stm32_i2c_event_isr(void *arg)
+void stm32_i2c_isr_event(void *arg)
 {
 	struct device *dev = (struct device *) arg;
 
 	stm32_i2c_event(dev);
 }
 
-void stm32_i2c_error_isr(void *arg)
+void stm32_i2c_isr_error(void *arg)
 {
 	struct device *dev = (struct device *) arg;
 
