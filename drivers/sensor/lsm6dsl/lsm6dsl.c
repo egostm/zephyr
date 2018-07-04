@@ -8,6 +8,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/** Compile if at least one device is activated
+ * @code{.codegen}
+ * codegen.edevice_tree_compatible_gating(['st,lsm6dsl-spi','st,lsm6dsl'])
+ * @endcode{.codegen}
+ */
+/** @code{.codeins}@endcode */
+
 #include <sensor.h>
 #include <kernel.h>
 #include <device.h>
@@ -768,13 +775,6 @@ static int lsm6dsl_init_chip(struct device *dev)
 	return 0;
 }
 
-static struct lsm6dsl_config lsm6dsl_config = {
-#ifdef CONFIG_LSM6DSL_SPI
-	.comm_master_dev_name = CONFIG_LSM6DSL_SPI_MASTER_DEV_NAME,
-#else
-	.comm_master_dev_name = CONFIG_LSM6DSL_I2C_MASTER_DEV_NAME,
-#endif
-};
 
 static int lsm6dsl_init(struct device *dev)
 {
@@ -791,6 +791,12 @@ static int lsm6dsl_init(struct device *dev)
 #ifdef CONFIG_LSM6DSL_SPI
 	lsm6dsl_spi_init(dev);
 #else
+	data->i2c_addr = config->i2c_slave_addr;
+	if (!data->i2c_addr) {
+		SYS_LOG_DBG("I2C slave address not provided");
+		return -EINVAL;
+	}
+
 	lsm6dsl_i2c_init(dev);
 #endif
 
@@ -817,8 +823,48 @@ static int lsm6dsl_init(struct device *dev)
 }
 
 
-static struct lsm6dsl_data lsm6dsl_data;
-
-DEVICE_AND_API_INIT(lsm6dsl, CONFIG_LSM6DSL_DEV_NAME, lsm6dsl_init,
-		    &lsm6dsl_data, &lsm6dsl_config, POST_KERNEL,
-		    CONFIG_SENSOR_INIT_PRIORITY, &lsm6dsl_api_funcs);
+/**
+ * @code{.codegen}
+ * codegen.import_module('declare_template')
+ *
+ * device_data = ('lsm6dsl_data')
+ *
+ * device_config_spi = ('lsm6dsl_config',
+ * """
+ * 	.comm_master_dev_name = ${@bus-name},
+ * 	.irq_gpio_port = ${@irq-gpios-controller},
+ * 	.irq_gpio_pin = ${@irq-gpios/pin},
+ * 	.cs_gpio_port = ${@cs-gpios-controller},
+ * 	.cs_gpio_pin = ${@cs-gpios/pin},
+ * 	.frequency = ${@spi-max-frequency},
+ * """)
+ *
+ * device_config_i2c = ('lsm6dsl_config',
+ * """
+ * 	.comm_master_dev_name = ${@bus-name},
+ * 	.i2c_slave_addr = ${@reg/0}
+ * """)
+ *
+ * declare_template.device_declare('st,lsm6dsl-spi',
+ * 'CONFIG_SENSOR_INIT_PRIORITY',
+ * 'POST_KERNEL',
+ *  None,
+ * 'lsm6dsl_init',
+ * 'lsm6dsl_api_funcs',
+ * device_data,
+ * device_config_spi
+ * )
+ *
+ * declare_template.device_declare('st,lsm6dsl',
+ * 'CONFIG_SENSOR_INIT_PRIORITY',
+ * 'POST_KERNEL',
+ *  None,
+ * 'lsm6dsl_init',
+ * 'lsm6dsl_api_funcs',
+ * device_data,
+ * device_config_i2c
+ * )
+ *
+ * @endcode{.codegen}
+ */
+/** @code{.codeins}@endcode */

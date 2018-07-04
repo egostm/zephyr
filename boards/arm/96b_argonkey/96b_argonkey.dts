@@ -60,6 +60,7 @@
 		reg = <1>;
 		spi-max-frequency = <1000000>;
 		irq-gpios = <&gpiob 1 0>;
+		cs-gpios = <&gpioc 2 0>;
 		label = "LSM6DSL_SPI";
 	};
 };
@@ -72,8 +73,6 @@
 	lsm6dsl@1 {
 		compatible = "st,lsm6dsl";
 		reg = <1>;
-		spi-max-frequency = <1000000>;
-		irq-gpios = <&gpiob 1 0>;
 		label = "LSM6DSL_I2C";
 	};
 };

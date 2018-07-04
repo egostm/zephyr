@@ -7,6 +7,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/** Compile if at least one device is activated
+ * @code{.codegen}
+ * codegen.edevice_tree_compatible_gating('st,lsm6dsl-spi')
+ * @endcode{.codegen}
+ */
+/** @code{.codeins}@endcode */
+
 #include <string.h>
 #include <spi.h>
 #include "lsm6dsl.h"
