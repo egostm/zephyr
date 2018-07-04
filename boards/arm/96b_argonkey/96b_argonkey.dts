@@ -60,14 +60,24 @@
 		reg = <1>;
 		spi-max-frequency = <1000000>;
 		irq-gpios = <&gpiob 1 0>;
-		label = "LSM6DSL-SPI";
+		label = "LSM6DSL_SPI";
 	};
 };
 
 &i2c1 {
 	status = "ok";
 	clock-frequency = <I2C_BITRATE_FAST>;
+
+	/* ST Microelectronics LSM6DSL accel/gyro sensor */
+	lsm6dsl@1 {
+		compatible = "st,lsm6dsl";
+		reg = <1>;
+		spi-max-frequency = <1000000>;
+		irq-gpios = <&gpiob 1 0>;
+		label = "LSM6DSL_I2C";
+	};
 };
+
 
 &i2c2 {
 	status = "ok";
