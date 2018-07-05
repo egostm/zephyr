@@ -18,6 +18,7 @@ import collections
 from copy import deepcopy
 import pprint
 import json
+import edtsdatabase
 
 from devicetree import parse_file
 from extract.globals import *
@@ -141,6 +142,7 @@ def extract_reg_prop(node_address, names, def_label, div, post_label):
 
         insert_defs(node_address, prop_def, prop_alias)
         insert_structs(node_address, 'reg', prop_struct)
+        # edtsdatabase.insert_device_property()
 
         # increment index for definition creation
         index += 1
@@ -810,8 +812,8 @@ def parse_arguments():
     parser.add_argument("-d", "--dts", nargs=1, required=True, help="DTS file")
     parser.add_argument("-y", "--yaml", nargs=1, required=True,
                         help="YAML file")
-    parser.add_argument("-s", "--structs", nargs=1, required=True,
-                        help="Generate struct file for the build system")
+    parser.add_argument("-e", "--edts", nargs=1, required=True,
+                        help="Generate EDTS database file for the build system")
     parser.add_argument("-f", "--fixup", nargs='+',
                         help="Fixup file(s), we allow multiple")
     parser.add_argument("-i", "--include", nargs=1, required=True,
@@ -839,11 +841,9 @@ def main():
      # generate config and include file
     generate_keyvalue_file(args.keyvalue[0])
 
-    #if args.structs:
-    #generate_structs(args)
-
     generate_include_file(args.include[0], args.fixup)
-    generate_struct_file(args.structs[0])
+    generate_struct_file(args.edts[0])
+    # edts.save(args.edts[0])
 
 if __name__ == '__main__':
     main()

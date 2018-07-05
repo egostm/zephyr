@@ -5,7 +5,9 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+import sys
 from collections import defaultdict
+import edtsdatabase
 import pprint
 
 # globals
@@ -13,6 +15,7 @@ phandles = {}
 aliases = defaultdict(list)
 chosen = {}
 reduced = {}
+edts = edtsdatabase.EDTSDatabase()
 defs = {}
 structs = {}
 
@@ -134,6 +137,7 @@ def insert_defs(node_address, new_defs, new_aliases):
         defs[node_address] = new_defs
 
 def insert_structs(node_address, deflabel, new_structs):
+
 
     if node_address in structs:
         if deflabel in structs[node_address] and isinstance(structs[node_address][deflabel], dict):

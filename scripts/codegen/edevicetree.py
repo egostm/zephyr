@@ -34,10 +34,10 @@ class EDeviceTreeMixin(object):
 
     def _edevice_tree_assure(self):
         if self._edts is None:
-            dts_file = self.cmake_variable("GENERATED_DTS_BOARD_EDTS_DB", None)
+            dts_file = self.cmake_variable("GENERATED_DTS_BOARD_EDTS", None)
             if dts_file is None:
                 return \
-                "CMake variable GENERATED_DTS_BOARD_EDTS_DB not defined to codegen."
+                "CMake variable GENERATED_DTS_BOARD_EDTS not defined to codegen."
             dts_file = Path(dts_file)
             if not dts_file.is_file():
                 return \
