@@ -37,137 +37,118 @@ Basic device tree property access
 
     codegen.import_module('dts_basic')
 
-The module provides utility functions to access device tree properties.
 
-Device controller
------------------
+This section is deprecated in current pull request
 
-.. function:: dts_basic.device_tree_controller_count(device_type_name [, default="<unset>"])
 
-    Get the number of activated devices of given type.
 
-    :param device_type_name: Type of device controller (e.g. 'SPI', 'GPIO', 'PIN', ...)
-    :return: number of activated devices
+Device declare module
+*********************
 
-.. function:: dts_basic.device_tree_controller_prefix(device_type_name, device_index [, default="<unset>"])
+::
 
-    Get the device tree prefix for the device of the given type and index.
+    codegen.import_module('declare_template')
 
-    :param device_type_name: Type of device controller (e.g. 'SPI', 'GPIO', 'PIN', ...)
-    :param device_index: Index of device
-    :return: device tree prefix (e.g. ST_STM32_SPI_FIFO_4000000)
 
-.. function:: dts_basic.device_tree_controller_property(device_type_name, device_index, property_name [, default="<unset>"])
+The module provides a simple API for driver devices instantiation
 
-    Get device tree property value for the device of the given type and index.
+Declaring a driver
+------------------
 
-    :param device_type_name: Type of device controller (e.g. 'SPI', 'GPIO', 'PIN', ...)
-    :param device_index: Index of device
-    :param property_name: Property name of the device tree property
-                          (e.g. 'BASE_ADDRESS', 'LABEL', 'IRQ_0', ...)
-    :return: property value as given in generated_dts_board.conf
+.. function:: declare_template.device_declare(compatibles, init_prio_flag, kernel_level, irq_func, init_func, api, data_struct, config_struct)
 
-.. function:: dts_basic.device_tree_controller_property_indirect(device_type_name, device_index, property_name, property_name_indirect [, default="<unset>"])
+Generate device instances code for all devices activated ('status' = 'ok') in board device tree file
+matching the provided compatibles.
+Most of the parameters provided aim at filling DEVICE_AND_API_INIT macro. Other parameters are there
+to help code generation to fit driver specifics.
+Generated instance code will be set under Kconfig variable which name is build with device node label name
+(e.g: CONFIG_I2C_1).
 
-    Get the property of another device given by a property.
+    :compatibles: List of compatibles supported by the driver (e.g. ['st,stm32-spi-fifo', 'st,stm32-spi'])
+    :init_prio_flag: Flag for driver activation priority (e.g. CONFIG_KERNEL_INIT_PRIORITY_DEVICE)
+    :kernel_level: Flag for driver activation priority (e.g. POST_KERNEL)
+    :irq_func: Two elements python dict providing driver isr function prefix (e.g. 'irq_func':'stm32_i2c_isr')
+                     and flag to be used for driver IRQ code control (e.g. 'irq_flag': 'CONFIG_I2C_STM32_INTERRUPT').
+                     If irq_func is 'None', no IRQ code is generated.
+                     'device_declare' will  generate as much IRQ code as declared by device node.
+                     If 'interrupts-names' property if provided in node, isr names will be generated using matching
+                     values as function postfixs.
+    :init_func: Name of the driver init function (e.g. 'i2c_stm32_init').
+    :api: Name of the driver api structure  (e.g. 'api_funcs').
+    :data_struct: Two elements python list providing elements for driver '_data' structure generation.
+    :config_struct: Two elements python list providing elements for driver '_config' structure generation.
 
-    :param device_type_name: Type of device controller (e.g. 'SPI', 'GPIO', 'PIN', ...)
-    :param device_index: Index of device
-    :param property_name: Property that denotes the device tree prefix of the other device
-    :param property_name_indirect: Property name of the other device property
-                                   (e.g. 'BASE_ADDRESS', 'LABEL', 'IRQ_0', ...)
-    :return: property value as given in generated_dts_board.conf
+'data_struct' and 'config_struct' will be processed the same way:
 
-.. function:: dts_basic.device_tree_controller_compatible_x(device_type_name, device_index, compatible [, default="<unset>"])
+* First element (e.g. 'i2c_stm32_config') should be the structure name.
+* Second element is a 'c' template code between triple double quotes (""" """). It should provide the expected code to be generated for the structure. For instance:
 
-    Check compatibility to device given by type and index.
+.. code-block:: python
 
-    :param device_type_name: Type of device controller (e.g. 'SPI', 'GPIO', 'PIN', ...)
-    :param device_index: Index of device
-    :param compatible: driver compatibility string (e.g. st,stm32-spi-fifo)
-    :return: 1 if compatible, 0 otherwise
+    """
+    	.i2c = (I2C_TypeDef *)${@reg/0},
+    	.pclken = {
+    			.enr = ${@clock/bits},
+    			.bus = ${@clock/bus},
+    	},
+    #ifdef CONFIG_I2C_STM32_INTERRUPT
+    	.irq_config_func = st_stm32_i2c_v1_${node_index}_config_irq,
+    #endif
+    	.bitrate = ${@clock-frequency},
+    """
 
-.. function:: dts_basic.device_tree_controller_compatible(device_type_name, compatible)
+This templates features two types of placeholders that we be substituted by expected matching values:
 
-    Check compatibility to at least one activated device of given type.
+* ${node_index}: will be replaced by device instance node property 'label' if provided or numeric index otherwise.
+* ${@'path to dts property'}: will be replaced by provided device node property. This path supports every node property that is documented in node yaml bindings. It also supports yaml heuristics, like 'bus-master' and will use documented '"#cells"'.
 
-    The compatible parameter is checked against the compatible property of
-    all activated devices of given type.
+If the second element of 'data_struct' or 'config_struct' list is not provided, an empty structure is generated.
 
-    :param device_type_name: Type of device controller (e.g. 'SPI', 'GPIO', 'PIN', ...)
-    :param compatible: driver compatibility string (e.g. st,stm32-spi-fifo)
-    :return: 1 if there is compatibility to at least one activated device,
-             0 otherwise
+Finally, for the above depicted example, 'device_declare' will generate, for device instance 'I2C1':
 
-.. function:: dts_basic.device_tree_controller_data_name(device_type_name, device_index, data)
+.. code-block:: c
 
-    Get the name of the driver data.
+    #ifdef CONFIG_I2C_1
 
-    Generates an unique name for driver data.
+    #ifdef CONFIG_I2C_STM32_INTERRUPT
+    DEVICE_DECLARE(st_stm32_i2c_v1_i2c_1);
+    static void st_stm32_i2c_v1_i2c_1_config_irq(struct device *dev)
+    {
+    	IRQ_CONNECT(31,
+    		0,
+    		stm32_i2c_isr_event,
+    		DEVICE_GET(st_stm32_i2c_v1_i2c_1),
+    		0);
+    	irq_enable(31);
+    	IRQ_CONNECT(32,
+    		0,
+    		stm32_i2c_isr_error,
+    		DEVICE_GET(st_stm32_i2c_v1_i2c_1),
+    		0);
+    	irq_enable(32);
+    }
+    #endif /* CONFIG_I2C_STM32_INTERRUPT */
 
-    :param device_type_name: Type of device controller (e.g. 'SPI', 'GPIO', 'PIN', ...)
-    :param device_index: Index of device
-    :param data: suffix for data (e.g. 'config')
-    :return: controller data name (e.g. ST_STM32_SPI_FIFO_4000000_config)
+    static const struct i2c_stm32_config st_stm32_i2c_v1_i2c_1_config = {
+    	.i2c = (I2C_TypeDef *)0x40005400,
+    	.pclken = {
+    		.enr = 131072,
+    		.bus = 2,
+    	},
+    #ifdef CONFIG_I2C_STM32_INTERRUPT
+    	.irq_config_func = st_stm32_i2c_v1_i2c_1_config_irq,
+    #endif
+    	.bitrate = 400000,
+    };
 
-.. function:: dts_basic.device_tree_controller_device_name(device_type_name, device_index)
+    static struct i2c_stm32_data st_stm32_i2c_v1_i2c_1_data = {};
 
-    Get the device name.
-
-    The device tree prefix of the device is used as the device name.
-
-    :param device_type_name: Type of device controller (e.g. 'SPI', 'GPIO', 'PIN', ...)
-    :param device_index: Index of device
-    :return: device name (e.g. ST_STM32_SPI_FIFO_4000000)
-
-.. function:: dts_basic.device_tree_controller_driver_name(device_type_name, device_index)
-
-    Get the driver name.
-
-    This is a convenience function for:
-
-    - codegen.device_tree_controller_property(device_type_name, device_index, 'LABEL')
-
-    :param device_type_name: Type of device controller (e.g. 'SPI', 'GPIO', 'PIN', ...)
-    :param device_index: Index of device
-    :return: driver name (e.g. "SPI_0")
-
-.. function:: dts_basic.device_tree_controller_driver_name_indirect(device_type_name, device_index, property_name)
-
-     Get the driver name of another device given by the property.
-
-    :param device_type_name: Type of device controller (e.g. 'SPI', 'GPIO', 'PIN', ...)
-    :param device_index: Index of device
-    :param property_name: Property that denotes the device tree prefix of the other device
-    :return: driver name of other device (e.g. "GPIOA")
-
-Guarding chunks of source code
-------------------------------
-
-.. function:: dts_basic.if_device_tree_controller_compatible(device_type_name, compatible)
-
-    Stop code generation if there is no activated device that is compatible.
-
-    Code generation stops right before the generator end marker @code{.codeins}@endcode.
-
-    :param device_type_name: Type of device controller (e.g. 'SPI', 'GPIO', 'PIN', ...)
-    :param compatible: driver compatibility string (e.g. st,stm32-spi-fifo)
-
-.. function:: dts_basic.outl_guard_device_tree_controller(device_type_name, compatible)
-
-    Write a guard (#if [guard]) C preprocessor directive to output.
-
-    If there is an activated device that is compatible the guard value is set to 1,
-    otherwise it is set to 0.
-
-    :param device_type_name: Type of device controller (e.g. 'SPI', 'GPIO', 'PIN', ...)
-    :param compatible: driver compatibility string (e.g. st,stm32-spi-fifo)
-
-.. function:: dts_basic.outl_unguard_device_tree_controller(device_type_name, compatible)
-
-    Write an unguard (#endif) C preprocessor directive to output.
-
-    This is the closing command for codegen.outl_guard_device_tree_controller().
-
-    :param device_type_name: Type of device controller (e.g. 'SPI', 'GPIO', 'PIN', ...)
-    :param compatible: driver compatibility string (e.g. st,stm32-spi-fifo)
+    DEVICE_AND_API_INIT(st_stm32_i2c_v1_i2c_1,
+    	"I2C_1",
+    	i2c_stm32_init,
+    	&st_stm32_i2c_v1_i2c_1_data,
+    	&st_stm32_i2c_v1_i2c_1_config,
+    	POST_KERNEL,
+    	CONFIG_KERNEL_INIT_PRIORITY_DEVICE,
+    	&api_funcs);
+    #endif /* CONFIG_I2C_1 */
