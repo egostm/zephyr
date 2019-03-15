@@ -1132,7 +1132,8 @@ class MakeGenerator:
             verb = "-v" if VERBOSE else ""
         else:
             generator = "Unix Makefiles"
-            generator_cmd = "$(MAKE)"
+            # generator_cmd = "$(MAKE)"
+            generator_cmd = "echo"
             verb = "VERBOSE=1" if VERBOSE else ""
 
         if phase == 'running':
@@ -2762,6 +2763,9 @@ Artificially long but functional example:
         not their directories. For instance net.socket.getaddrinfo_ok
         and net.socket.fd_set belong to different directories.
         """)
+
+    parser.add_argument("--list-files", action="store_true",
+            help="list all files build.")
 
     parser.add_argument("--export-tests", action="store",
             metavar="FILENAME",
