@@ -1130,7 +1130,8 @@ class MakeGenerator:
             verb = "-v" if VERBOSE else ""
         else:
             generator = "Unix Makefiles"
-            generator_cmd = "$(MAKE)"
+            # generator_cmd = "$(MAKE)"
+            generator_cmd = "echo"
             verb = "VERBOSE=1" if VERBOSE else ""
 
         if phase == 'running':
@@ -2743,6 +2744,9 @@ def parse_arguments():
 
     parser.add_argument("--list-tests", action="store_true",
             help="list all tests.")
+
+    parser.add_argument("--list-files", action="store_true",
+            help="list all files build.")
 
     parser.add_argument("--export-tests", action="store",
             metavar="FILENAME",
