@@ -1,0 +1,20 @@
+identifier: nucleo_g431rb
+name: NUCLEO-G431RB
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+  - xtools
+ram: 32
+flash: 128
+supported:
+  - arduino_i2c
+  - nvs
+  - pwm
+  - i2c
+  - gpio
+  - usb device
+  - rtc
+  - counter
+  - spi
