@@ -1,0 +1,11 @@
+title: STM32 G4 Flash Controller
+
+description: >
+    This binding gives a base representation of the STM32 G4 Flash Controller
+
+inherits:
+    !include flash-controller.yaml
+
+properties:
+    compatible:
+      constraint: "st,stm32g4-flash-controller"
