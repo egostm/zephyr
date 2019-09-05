@@ -22,6 +22,9 @@ if SERIAL
 config LPUART_1
 	default y
 
+config UART_1
+	default y
+
 endif # SERIAL
 
 if I2C
