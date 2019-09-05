@@ -296,6 +296,8 @@ struct bt_hci_cmd_hdr {
 #define BT_GAP_ADV_FAST_INT_MAX_2               0x00f0  /* 150 ms   */
 #define BT_GAP_ADV_SLOW_INT_MIN                 0x0640  /* 1 s      */
 #define BT_GAP_ADV_SLOW_INT_MAX                 0x0780  /* 1.2 s    */
+#define BT_GAP_ADV_SLOW_INT_MIN_2               0x04B0  /* 0.75 s   */
+#define BT_GAP_ADV_SLOW_INT_MAX_2               0x05A0  /* 0.9 s    */
 #define BT_GAP_INIT_CONN_INT_MIN                0x0018  /* 30 ms    */
 #define BT_GAP_INIT_CONN_INT_MAX                0x0028  /* 50 ms    */
 

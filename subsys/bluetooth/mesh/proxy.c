@@ -70,6 +70,12 @@ static const struct bt_le_adv_param fast_adv_param = {
 	.interval_max = BT_GAP_ADV_FAST_INT_MAX_2,
 };
 
+static const struct bt_le_adv_param not_so_fast_adv_param = {
+	.options = ADV_OPT,
+	.interval_min = BT_GAP_ADV_SLOW_INT_MIN,
+	.interval_max = BT_GAP_ADV_SLOW_INT_MAX,
+};
+
 static bool proxy_adv_enabled;
 
 #if defined(CONFIG_BT_MESH_GATT_PROXY)
@@ -1041,8 +1047,13 @@ static int node_id_adv(struct bt_mesh_subnet *sub)
 
 	memcpy(proxy_svc_data + 3, tmp + 8, 8);
 
+#if 1
+	err = bt_le_adv_start(&not_so_fast_adv_param, node_id_ad,
+			      ARRAY_SIZE(node_id_ad), NULL, 0);
+#else
 	err = bt_le_adv_start(&fast_adv_param, node_id_ad,
 			      ARRAY_SIZE(node_id_ad), NULL, 0);
+#endif
 	if (err) {
 		BT_WARN("Failed to advertise using Node ID (err %d)", err);
 		return err;
