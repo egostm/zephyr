@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <st/g4/stm32g4-pinctrl.dtsi>
 
 #include <arm/armv7-m.dtsi>
 #include <dt-bindings/clock/stm32_clock.h>
