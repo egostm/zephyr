@@ -156,3 +156,42 @@ void stm32_setup_pins(const struct pin_config *pinconf,
 				  clk);
 	}
 }
+
+
+static int pinmux_set(struct device *dev, u32_t pin, u8_t func)
+{
+	const struct gpio_stm32_config *cfg = dev->config->config_info;
+
+	return gpio_stm32_configure(cfg->base, pin, 0, func);
+}
+
+static int pinmux_get(struct device *dev, u32_t pin, u8_t func)
+{
+	return -ENOSYS;
+}
+
+static int pinmux_pullup(struct device *dev, u32_t pin, u8_t func)
+{
+	return -ENOSYS;
+}
+
+static int pinmux_input(struct device *dev, u32_t pin, u8_t func)
+{
+	return -ENOSYS;
+}
+
+static struct pinmux_driver_api apis = {
+	.set = pinmux_set,
+	.get = pinmux_get,
+	.pullup = pinmux_pullup,
+	.input = pinmux_input
+};
+
+static int pinmux_init(struct device *device)
+{
+	ARG_UNUSED(device);
+	return 0;
+}
+
+DEVICE_AND_API_INIT(pinmux, CONFIG_PINMUX_NAME, &pinmux_init, NULL, NULL,
+		    PRE_KERNEL_1, CONFIG_PINMUX_INIT_PRIORITY, &apis);
