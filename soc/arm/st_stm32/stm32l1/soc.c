@@ -15,7 +15,12 @@
 #include <arch/arm/aarch32/cortex_m/cmsis.h>
 #include <linker/linker-defs.h>
 #include <string.h>
+#include <sys/__assert.h>
 
+void assert_failed(uint8_t* file, uint32_t line) {
+
+	assert_post_action(file, line);
+}
 /**
  * @brief Perform basic hardware initialization at boot.
  *

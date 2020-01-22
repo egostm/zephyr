@@ -305,6 +305,8 @@ static int stm32_clock_control_init(struct device *dev)
 #ifdef CONFIG_CLOCK_STM32_SYSCLK_SRC_PLL
 	LL_UTILS_PLLInitTypeDef s_PLLInitStruct;
 
+
+
 	/* configure PLL input settings */
 	config_pll_init(&s_PLLInitStruct);
 
@@ -342,6 +344,12 @@ static int stm32_clock_control_init(struct device *dev)
 	LL_RCC_HSE_Disable();
 
 #elif CONFIG_CLOCK_STM32_PLL_SRC_HSI
+  	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
+  	LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE1);
+  	/* Poll VOSF bit of in PWR_CSR. Wait until it is reset to 0 */
+  	while (LL_PWR_IsActiveFlag_VOSF() != 0)
+  	{
+  	};
 	/* Switch to PLL with HSI as clock source */
 	LL_PLL_ConfigSystemClock_HSI(&s_PLLInitStruct, &s_ClkInitStruct);
 
