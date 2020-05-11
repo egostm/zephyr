@@ -14,7 +14,7 @@
 
 /* pin assignments for 96boards Argonkey board */
 static const struct pin_config pinconf[] = {
-#if DT_HAS_NODE_STATUS_OKAY(DT_NODELABEL(usart1))
+#if DT_HAS_NODE_STATUS_OKAY(DT_NODELABEL(usart1)) && CONFIG_SERIAL
 	{STM32_PIN_PA9, STM32F4_PINMUX_FUNC_PA9_USART1_TX},
 	{STM32_PIN_PA10, STM32F4_PINMUX_FUNC_PA10_USART1_RX},
 #endif

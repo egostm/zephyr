@@ -14,7 +14,7 @@
 
 /* pin assignments for Feather STM32F405 board */
 static const struct pin_config pinconf[] = {
-#if DT_HAS_NODE_STATUS_OKAY(DT_NODELABEL(usart3))
+#if DT_HAS_NODE_STATUS_OKAY(DT_NODELABEL(usart3)) && CONFIG_SERIAL
 	{STM32_PIN_PB10, STM32F4_PINMUX_FUNC_PB10_USART3_TX},
 	{STM32_PIN_PB11, STM32F4_PINMUX_FUNC_PB11_USART3_RX},
 #endif
