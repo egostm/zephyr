@@ -24,6 +24,7 @@
 #define SPI_NOR_CMD_PP          0x02    /* Page program */
 #define SPI_NOR_CMD_SE          0x20    /* Sector erase */
 #define SPI_NOR_CMD_BE_32K      0x52    /* Block erase 32KB */
+#define SPI_NOR_CMD_RSFDP       0x5A    /* Read Serial Flash Discovery Parameter */
 #define SPI_NOR_CMD_BE          0xD8    /* Block erase */
 #define SPI_NOR_CMD_CE          0xC7    /* Chip erase */
 #define SPI_NOR_CMD_RDID        0x9F    /* Read JEDEC ID */
