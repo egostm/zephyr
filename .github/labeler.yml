@@ -123,3 +123,11 @@
 "area: Modules":
   - "west.yml"
   - "modules/**/*"
+"platform: STM32":
+  - "boards/arm/nucleo_*/**"
+  - "boards/arm/*stm32*/**"
+  - "drivers/**/*stm32*"
+  - "dts/arm/st/*/*"
+  - "dts/bindings/*/*stm32*"
+  - "include/drivers/*/*stm32*"
+  - "soc/arm/st_stm32/**"
