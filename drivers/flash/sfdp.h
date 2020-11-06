@@ -12,13 +12,13 @@
 #include <sys/byteorder.h>
 
 union sfdp_header {
-	u32_t word[2];
-	u8_t  byte[8];
+	uint32_t word[2];
+	uint8_t  byte[8];
 };
 
 union sfdp_dword {
-	u32_t word;
-	u8_t  byte[4];
+	uint32_t word;
+	uint8_t  byte[4];
 };
 
 #define SFDP_HEADER_ADDRESS     0x00000000  /* Address of SFDP header */
@@ -35,7 +35,7 @@ union sfdp_dword {
  * @param base_header Pointer to data structure holding the base header.
  * @return SFDP Signature.
  */
-static inline u32_t sfdp_get_header_signature(union sfdp_header *base_header)
+static inline uint32_t sfdp_get_header_signature(union sfdp_header *base_header)
 {
 	return sys_le32_to_cpu(base_header->word[0]);
 }
@@ -45,7 +45,7 @@ static inline u32_t sfdp_get_header_signature(union sfdp_header *base_header)
  * @param param_header Pointer to data structure holding the parameter header.
  * @return Id number, 0x00 indicates a JEDEC specified header.
  */
-static inline u8_t sfdp_get_param_header_id(union sfdp_header *param_header)
+static inline uint8_t sfdp_get_param_header_id(union sfdp_header *param_header)
 {
 	return param_header->byte[0];
 }
@@ -55,7 +55,7 @@ static inline u8_t sfdp_get_param_header_id(union sfdp_header *param_header)
  * @param param_header Pointer to data structure holding the parameter header.
  * @return number of dwords in parameter table.
  */
-static inline u8_t sfdp_get_param_header_pt_length(union sfdp_header *param_header)
+static inline uint8_t sfdp_get_param_header_pt_length(union sfdp_header *param_header)
 {
 	return param_header->byte[3];
 }
@@ -92,7 +92,7 @@ static inline bool sfdp_pt_1v0_dw2_is_gt_2_gigabits(union sfdp_dword dw)
  * - flash memory density is N+1 bits for densities 2 gigabits or less
  * - flash memory density is 2^N bits for densities greater than 2 gigabits
  */
-static inline u32_t sfdp_pt_1v0_dw2_get_density_n(union sfdp_dword dw)
+static inline uint32_t sfdp_pt_1v0_dw2_get_density_n(union sfdp_dword dw)
 {
 	return sys_le32_to_cpu(dw.word) & 0x7FFFFFFF;
 }
@@ -102,7 +102,7 @@ static inline u32_t sfdp_pt_1v0_dw2_get_density_n(union sfdp_dword dw)
  * @param dw 8th dword in little-endian byte order.
  * @return Sector Type 2 Erase Opcode
  */
-static inline u8_t sfdp_pt_1v0_dw8_get_sector_type_2_erase_opcode(union sfdp_dword dw)
+static inline uint8_t sfdp_pt_1v0_dw8_get_sector_type_2_erase_opcode(union sfdp_dword dw)
 {
 	return dw.byte[3];
 }
@@ -112,7 +112,7 @@ static inline u8_t sfdp_pt_1v0_dw8_get_sector_type_2_erase_opcode(union sfdp_dwo
  * @param dw 8th dword in little-endian byte order.
  * @return N indicating Sector Type 2 Size, where: sector/block size = 2^N bytes
  */
-static inline u8_t sfdp_pt_1v0_dw8_get_sector_type_2_size_n(union sfdp_dword dw)
+static inline uint8_t sfdp_pt_1v0_dw8_get_sector_type_2_size_n(union sfdp_dword dw)
 {
 	return dw.byte[2];
 }
@@ -122,7 +122,7 @@ static inline u8_t sfdp_pt_1v0_dw8_get_sector_type_2_size_n(union sfdp_dword dw)
  * @param dw 8th dword in little-endian byte order.
  * @return Sector Type 1 Erase Opcode
  */
-static inline u8_t sfdp_pt_1v0_dw8_get_sector_type_1_erase_opcode(union sfdp_dword dw)
+static inline uint8_t sfdp_pt_1v0_dw8_get_sector_type_1_erase_opcode(union sfdp_dword dw)
 {
 	return dw.byte[1];
 }
@@ -132,7 +132,7 @@ static inline u8_t sfdp_pt_1v0_dw8_get_sector_type_1_erase_opcode(union sfdp_dwo
  * @param dw 8th dword in little-endian byte order.
  * @return N indicating Sector Type 1 Size, where: sector/block size = 2^N bytes
  */
-static inline u8_t sfdp_pt_1v0_dw8_get_sector_type_1_size_n(union sfdp_dword dw)
+static inline uint8_t sfdp_pt_1v0_dw8_get_sector_type_1_size_n(union sfdp_dword dw)
 {
 	return dw.byte[0];
 }
@@ -142,7 +142,7 @@ static inline u8_t sfdp_pt_1v0_dw8_get_sector_type_1_size_n(union sfdp_dword dw)
  * @param dw 9th dword in little-endian byte order.
  * @return Sector Type 4 Erase Opcode
  */
-static inline u8_t sfdp_pt_1v0_dw9_get_sector_type_4_erase_opcode(union sfdp_dword dw)
+static inline uint8_t sfdp_pt_1v0_dw9_get_sector_type_4_erase_opcode(union sfdp_dword dw)
 {
 	return dw.byte[3];
 }
@@ -152,7 +152,7 @@ static inline u8_t sfdp_pt_1v0_dw9_get_sector_type_4_erase_opcode(union sfdp_dwo
  * @param dw 9th dword in little-endian byte order.
  * @return N indicating Sector Type 4 Size, where: sector/block size = 2^N bytes
  */
-static inline u8_t sfdp_pt_1v0_dw9_get_sector_type_4_size_n(union sfdp_dword dw)
+static inline uint8_t sfdp_pt_1v0_dw9_get_sector_type_4_size_n(union sfdp_dword dw)
 {
 	return dw.byte[2];
 }
@@ -162,7 +162,7 @@ static inline u8_t sfdp_pt_1v0_dw9_get_sector_type_4_size_n(union sfdp_dword dw)
  * @param dw 9th dword in little-endian byte order.
  * @return Sector Type 3 Erase Opcode
  */
-static inline u8_t sfdp_pt_1v0_dw9_get_sector_type_3_erase_opcode(union sfdp_dword dw)
+static inline uint8_t sfdp_pt_1v0_dw9_get_sector_type_3_erase_opcode(union sfdp_dword dw)
 {
 	return dw.byte[1];
 }
@@ -172,7 +172,7 @@ static inline u8_t sfdp_pt_1v0_dw9_get_sector_type_3_erase_opcode(union sfdp_dwo
  * @param dw 9th dword in little-endian byte order.
  * @return N indicating Sector Type 3 Size, where: sector/block size = 2^N bytes
  */
-static inline u8_t sfdp_pt_1v0_dw9_get_sector_type_3_size_n(union sfdp_dword dw)
+static inline uint8_t sfdp_pt_1v0_dw9_get_sector_type_3_size_n(union sfdp_dword dw)
 {
 	return dw.byte[0];
 }
