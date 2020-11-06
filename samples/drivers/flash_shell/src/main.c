@@ -15,6 +15,13 @@
 #include <soc.h>
 #include <stdlib.h>
 
+#if DT_NODE_HAS_STATUS(DT_INST(0, jedec_spi_nor), okay)
+#define FLASH_DEVICE DT_LABEL(DT_INST(0, jedec_spi_nor))
+#else
+#error Unsupported flash driver
+#define FLASH_DEVICE ""
+#endif
+
 LOG_MODULE_REGISTER(app);
 
 #define PR_SHELL(shell, fmt, ...)				\
@@ -774,10 +781,10 @@ static int cmd_set_dev(const struct shell *shell, size_t argc, char **argv)
 void main(void)
 {
 	flash_device =
-		device_get_binding(DT_CHOSEN_ZEPHYR_FLASH_CONTROLLER_LABEL);
+		device_get_binding(FLASH_DEVICE);
 	if (flash_device) {
 		printk("Found flash controller %s.\n",
-			DT_CHOSEN_ZEPHYR_FLASH_CONTROLLER_LABEL);
+			FLASH_DEVICE);
 		printk("Flash I/O commands can be run.\n");
 	} else {
 		printk("**No flash controller found!**\n");
