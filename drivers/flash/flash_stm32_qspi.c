@@ -12,6 +12,7 @@
 #include <arch/common/ffs.h>
 #include <sys/util.h>
 #include <soc.h>
+#include <pinmux/stm32/pinmux_stm32.h>
 #include <drivers/clock_control/stm32_clock_control.h>
 #include <drivers/clock_control.h>
 #include <drivers/flash.h>
@@ -41,6 +42,8 @@ struct flash_stm32_qspi_config {
 	struct stm32_pclken pclken;
 	irq_config_func_t irq_config;
 	struct spi_nor_flash_config flash_config;
+	const struct soc_gpio_pinctrl *pinctrl_list;
+	size_t pinctrl_list_size;
 };
 
 struct flash_params {
@@ -643,6 +646,15 @@ static int flash_stm32_qspi_init(const struct device *dev)
 	uint32_t prescaler = 0;
 	int ret;
 
+	/* Configure dt provided device signals when available */
+	ret = stm32_dt_pinctrl_configure(dev_cfg->pinctrl_list,
+					 dev_cfg->pinctrl_list_size,
+					 (uint32_t)dev_cfg->regs);
+	if (ret < 0) {
+		LOG_ERR("QSPI pinctrl setup failed (%d)", ret);
+		return ret;
+	}
+
 	__ASSERT_NO_MSG(device_get_binding(STM32_CLOCK_CONTROL_NAME));
 
 	if (clock_control_on(device_get_binding(STM32_CLOCK_CONTROL_NAME),
@@ -738,6 +750,9 @@ static int flash_stm32_qspi_init(const struct device *dev)
 #define STM32_QSPI_INIT(id)						\
 static void flash_stm32_qspi_irq_config_func_##id(const struct device *dev);	\
 									\
+static const struct soc_gpio_pinctrl qspi_pins_##id[] =			\
+				ST_STM32_DT_INST_PINCTRL(id, 0);	\
+									\
 static const struct flash_stm32_qspi_config flash_stm32_qspi_cfg_##id = { \
 	.regs = (QUADSPI_TypeDef *)DT_INST_REG_ADDR(id),		\
 	.pclken = {							\
@@ -749,6 +764,8 @@ static const struct flash_stm32_qspi_config flash_stm32_qspi_cfg_##id = { \
 		.jedec_id = DT_PROP(QSPI_FLASH_MODULE(id, 0), jedec_id), \
 		.spi_max_frequency = DT_PROP(QSPI_FLASH_MODULE(id, 0), spi_max_frequency), \
 	},								\
+	.pinctrl_list = qspi_pins_##id,					\
+	.pinctrl_list_size = ARRAY_SIZE(qspi_pins_##id),		\
 };									\
 									\
 static struct flash_stm32_qspi_data flash_stm32_qspi_dev_data_##id = {	\
