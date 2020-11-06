@@ -15,8 +15,8 @@
 #include <soc.h>
 #include <stdlib.h>
 
-#if DT_NODE_HAS_STATUS(DT_INST(0, jedec_spi_nor), okay)
-#define FLASH_DEVICE DT_LABEL(DT_INST(0, jedec_spi_nor))
+#if DT_NODE_HAS_STATUS(DT_INST(0, st_stm32_quadspi), okay)
+#define FLASH_DEVICE DT_LABEL(DT_INST(0, st_stm32_quadspi))
 #else
 #error Unsupported flash driver
 #define FLASH_DEVICE ""
