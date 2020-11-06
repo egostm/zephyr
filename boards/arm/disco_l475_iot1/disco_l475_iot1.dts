@@ -228,3 +228,20 @@
 		     &adc1_in14_pc5>;
 	status = "okay";
 };
+
+&quadspi {
+	pinctrl-0 = <&quadspi_clk_pe10 &quadspi_ncs_pe11
+		     &quadspi_bk1_io0_pe12 &quadspi_bk1_io1_pe13
+		     &quadspi_bk1_io2_pe14 &quadspi_bk1_io3_pe15>;
+	status = "okay";
+
+	mx25r6435f: qspi-nor-flash@0 {
+		compatible = "jedec,spi-nor";
+		label = "MX25R6435F";
+		reg = <0>;
+		spi-max-frequency = <80000000>;
+		/* 64 Megabits = 8 Megabytes */
+		size = <0x4000000>;
+		jedec-id = [1f 43 17];
+	};
+};

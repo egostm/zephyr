@@ -62,4 +62,9 @@ config WIFI_ESWIFI
 
 endif # WIFI
 
+
+#TBD if ?
+config FLASH_STM32_QSPI
+	default y
+
 endif # BOARD_DISCO_L475_IOT1
