@@ -39,6 +39,19 @@
 
 /* Test whether offset is aligned to a given number of bits. */
 #define SPI_NOR_IS_ALIGNED(_ofs, _bits) (((_ofs) & BIT_MASK(_bits)) == 0)
-#define SPI_NOR_IS_SECTOR_ALIGNED(_ofs) SPI_NOR_IS_ALIGNED(_ofs, 12)
+//#define SPI_NOR_IS_SECTOR_ALIGNED(_ofs) SPI_NOR_IS_ALIGNED(_ofs, 12)
+
+/* The clock frequency supported by all compliant flash devices for the read
+ * SFDP instruction. To get the valid result the controller needs to configure
+ * the bus at the specified value (50 MHz) or less.
+ */
+#define SPI_NOR_SFDP_READ_CLOCK_FREQUENCY   50000000
+
+/* Test whether offset is aligned. */
+#define SPI_NOR_IS_PAGE_ALIGNED(_ofs) (((_ofs) & (SPI_NOR_PAGE_SIZE - 1U)) == 0)
+#define SPI_NOR_IS_SECTOR_ALIGNED(_ofs) (((_ofs) & (SPI_NOR_SECTOR_SIZE - 1U)) == 0)
+#define SPI_NOR_IS_BLOCK_ALIGNED(_ofs) (((_ofs) & (SPI_NOR_BLOCK_SIZE - 1U)) == 0)
+#define SPI_NOR_IS_BLOCK32_ALIGNED(_ofs) (((_ofs) & (SPI_NOR_BLOCK32_SIZE - 1U)) == 0)
+#define SPI_NOR_IS_ADDR_ALIGNED(_ofs, _size) (((_ofs) & (_size - 1U)) == 0)
 
 #endif /*__SPI_NOR_H__*/
