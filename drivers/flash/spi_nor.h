@@ -49,5 +49,6 @@
 /* Test whether offset is aligned to a given number of bits. */
 #define SPI_NOR_IS_ALIGNED(_ofs, _bits) (((_ofs) & BIT_MASK(_bits)) == 0)
 #define SPI_NOR_IS_SECTOR_ALIGNED(_ofs) SPI_NOR_IS_ALIGNED(_ofs, 12)
+#define SPI_NOR_IS_ADDR_ALIGNED(_ofs, _size) (((_ofs) & (_size - 1U)) == 0)
 
 #endif /*__SPI_NOR_H__*/
