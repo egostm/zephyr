@@ -747,53 +747,50 @@ static int flash_stm32_qspi_init(const struct device *dev)
 #define QSPI_FLASH_MODULE(drv_id, flash_id) \
 	DT_CHILD(DT_DRV_INST(drv_id), qspi_nor_flash_##flash_id)
 
-#define STM32_QSPI_INIT(id)						\
-static void flash_stm32_qspi_irq_config_func_##id(const struct device *dev);	\
-									\
-static const struct soc_gpio_pinctrl qspi_pins_##id[] =			\
-				ST_STM32_DT_INST_PINCTRL(id, 0);	\
-									\
-static const struct flash_stm32_qspi_config flash_stm32_qspi_cfg_##id = { \
-	.regs = (QUADSPI_TypeDef *)DT_INST_REG_ADDR(id),		\
-	.pclken = {							\
-		.enr = DT_INST_CLOCKS_CELL(id, bits),			\
-		.bus = DT_INST_CLOCKS_CELL(id, bus)			\
-	},								\
-	.irq_config = flash_stm32_qspi_irq_config_func_##id,		\
-	.flash_config = {						\
-		.jedec_id = DT_PROP(QSPI_FLASH_MODULE(id, 0), jedec_id), \
-		.spi_max_frequency = DT_PROP(QSPI_FLASH_MODULE(id, 0), spi_max_frequency), \
-	},								\
-	.pinctrl_list = qspi_pins_##id,					\
-	.pinctrl_list_size = ARRAY_SIZE(qspi_pins_##id),		\
-};									\
-									\
-static struct flash_stm32_qspi_data flash_stm32_qspi_dev_data_##id = {	\
-	.hqspi = {							\
-		.Instance = (QUADSPI_TypeDef *)DT_INST_REG_ADDR(id),	\
-		.Init = {						\
-			.FifoThreshold = STM32_QSPI_FIFO_THRESHOLD,	\
-			.FlashSize = 31,				\
-			.SampleShifting = QSPI_SAMPLE_SHIFTING_NONE,	\
-			.ChipSelectHighTime = QSPI_CS_HIGH_TIME_1_CYCLE,\
-			.ClockMode = QSPI_CLOCK_MODE_0,			\
-		},							\
-	},								\
-};									\
-									\
-DEVICE_AND_API_INIT(flash_stm32_qspi_##id, DT_INST_LABEL(id),		\
-		    &flash_stm32_qspi_init,				\
-		    &flash_stm32_qspi_dev_data_##id,			\
-		    &flash_stm32_qspi_cfg_##id,				\
-		    POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEVICE,	\
-		    &flash_stm32_qspi_driver_api);			\
-									\
-static void flash_stm32_qspi_irq_config_func_##id(const struct device *dev)	\
-{									\
-	IRQ_CONNECT(DT_INST_IRQN(id), DT_INST_IRQ(id, priority),	\
-		    flash_stm32_qspi_isr,				\
-		    DEVICE_GET(flash_stm32_qspi_##id), 0);		\
-	irq_enable(DT_INST_IRQN(id));					\
-}
+static void flash_stm32_qspi_irq_config_func(const struct device *dev);
 
-DT_INST_FOREACH_STATUS_OKAY(STM32_QSPI_INIT)
+static const struct soc_gpio_pinctrl qspi_pins[] =
+						ST_STM32_DT_INST_PINCTRL(0, 0);
+
+static const struct flash_stm32_qspi_config flash_stm32_qspi_cfg = {
+	.regs = (QUADSPI_TypeDef *)DT_INST_REG_ADDR(0),
+	.pclken = {
+		.enr = DT_INST_CLOCKS_CELL(0, bits),
+		.bus = DT_INST_CLOCKS_CELL(0, bus)
+	},
+	.irq_config = flash_stm32_qspi_irq_config_func,
+	.flash_config = {
+		.jedec_id = DT_PROP(QSPI_FLASH_MODULE(0, 0), jedec_id),
+		.spi_max_frequency = DT_PROP(QSPI_FLASH_MODULE(0, 0), spi_max_frequency),
+	},
+	.pinctrl_list = qspi_pins,
+	.pinctrl_list_size = ARRAY_SIZE(qspi_pins),
+};
+
+static struct flash_stm32_qspi_data flash_stm32_qspi_dev_data = {
+	.hqspi = {
+		.Instance = (QUADSPI_TypeDef *)DT_INST_REG_ADDR(0),
+		.Init = {
+			.FifoThreshold = STM32_QSPI_FIFO_THRESHOLD,
+			.FlashSize = 31,
+			.SampleShifting = QSPI_SAMPLE_SHIFTING_NONE,
+			.ChipSelectHighTime = QSPI_CS_HIGH_TIME_1_CYCLE,
+			.ClockMode = QSPI_CLOCK_MODE_0,
+		},
+	},
+};
+
+DEVICE_AND_API_INIT(flash_stm32_qspi, DT_INST_LABEL(0),
+		    &flash_stm32_qspi_init,
+		    &flash_stm32_qspi_dev_data,
+		    &flash_stm32_qspi_cfg,
+		    POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEVICE,
+		    &flash_stm32_qspi_driver_api);
+
+static void flash_stm32_qspi_irq_config_func(const struct device *dev)
+{
+	IRQ_CONNECT(DT_INST_IRQN(0), DT_INST_IRQ(0, priority),
+		    flash_stm32_qspi_isr,
+		    DEVICE_GET(flash_stm32_qspi), 0);
+	irq_enable(DT_INST_IRQN(0));
+}
