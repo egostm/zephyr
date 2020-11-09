@@ -16,6 +16,9 @@
 #include <drivers/clock_control/stm32_clock_control.h>
 #include <drivers/clock_control.h>
 #include <drivers/flash.h>
+#include <dt-bindings/dma/stm32_dma.h>
+#include <drivers/dma.h>
+
 #include "spi_nor.h"
 #include "sfdp.h"
 
@@ -26,6 +29,18 @@ LOG_MODULE_REGISTER(flash_stm32_qspi, CONFIG_FLASH_LOG_LEVEL);
 #define STM32_QSPI_FLASH_SIZE_MIN         2
 #define STM32_QSPI_CLOCK_PRESCALER_MAX  255
 
+uint32_t table_m_size[] = {
+	LL_DMA_MDATAALIGN_BYTE,
+	LL_DMA_MDATAALIGN_HALFWORD,
+	LL_DMA_MDATAALIGN_WORD,
+};
+
+uint32_t table_p_size[] = {
+	LL_DMA_PDATAALIGN_BYTE,
+	LL_DMA_PDATAALIGN_HALFWORD,
+	LL_DMA_PDATAALIGN_WORD,
+};
+
 typedef void (*irq_config_func_t)(const struct device *dev);
 
 /* Data from DT child node containing flash parameters */
@@ -35,6 +50,13 @@ struct spi_nor_flash_config {
 
 	/* Max SPI frequency supported by the flash module */
 	uint32_t spi_max_frequency;
+};
+
+struct stream {
+	const char *name;
+	const struct device *dev;
+	uint32_t channel;
+	struct dma_config cfg;
 };
 
 struct flash_stm32_qspi_config {
@@ -64,6 +86,7 @@ struct flash_stm32_qspi_data {
 	struct flash_params flash_params;
 	bool write_protection;
 	int cmd_status;
+	struct stream dma;
 };
 
 #define DEV_NAME(dev) ((dev)->name)
@@ -137,7 +160,7 @@ static int qspi_read_access(const struct device *dev, QSPI_CommandTypeDef *cmd,
 		return -EIO;
 	}
 
-	hal_ret = HAL_QSPI_Receive_IT(&dev_data->hqspi, data);
+	hal_ret = HAL_QSPI_Receive_DMA(&dev_data->hqspi, data);
 	if (hal_ret != HAL_OK) {
 		LOG_ERR("%d: Failed to read data", hal_ret);
 		return -EIO;
@@ -173,7 +196,7 @@ static int qspi_write_access(const struct device *dev, QSPI_CommandTypeDef *cmd,
 		return -EIO;
 	}
 
-	hal_ret = HAL_QSPI_Transmit_IT(&dev_data->hqspi, (uint8_t *)data);
+	hal_ret = HAL_QSPI_Transmit_DMA(&dev_data->hqspi, (uint8_t *)data);
 	if (hal_ret != HAL_OK) {
 		LOG_ERR("%d: Failed to read data", hal_ret);
 		return -EIO;
@@ -517,15 +540,28 @@ flash_stm32_qspi_get_parameters(const struct device *dev)
 	return &flash_stm32_qspi_parameters;
 }
 
-static void flash_stm32_qspi_isr(void *arg)
+static void flash_stm32_qspi_isr(const struct device *dev)
 {
-	const struct device *dev = (struct device *)arg;
 	const struct flash_stm32_qspi_config *dev_cfg = DEV_CFG(dev);
 	struct flash_stm32_qspi_data *dev_data = DEV_DATA(dev);
 
 	LOG_DBG("SR 0x%x", dev_cfg->regs->SR);
 
 	HAL_QSPI_IRQHandler(&dev_data->hqspi);
+}
+
+/* This function is executed in the interrupt context */
+static void qspi_dma_callback(const struct device *dev, void *arg,
+			 uint32_t channel, int status)
+{
+	DMA_HandleTypeDef *hdma = arg;
+
+	if (status != 0) {
+		LOG_ERR("DMA callback error with channel %d.", channel);
+
+	}
+
+	HAL_DMA_IRQHandler(hdma);
 }
 
 __weak HAL_StatusTypeDef HAL_DMA_Abort_IT(DMA_HandleTypeDef *hdma)
@@ -642,6 +678,8 @@ static int flash_stm32_qspi_init(const struct device *dev)
 {
 	const struct flash_stm32_qspi_config *dev_cfg = DEV_CFG(dev);
 	struct flash_stm32_qspi_data *dev_data = DEV_DATA(dev);
+	struct dma_config dma_cfg = dev_data->dma.cfg;
+	static DMA_HandleTypeDef hdma;
 	uint32_t ahb_clock_freq;
 	uint32_t prescaler = 0;
 	int ret;
@@ -680,6 +718,55 @@ static int flash_stm32_qspi_init(const struct device *dev)
 		}
 	}
 	__ASSERT_NO_MSG(prescaler <= STM32_QSPI_CLOCK_PRESCALER_MAX);
+
+	/*
+	 * DMA configuration
+	 * Due to use of QSPI HAL API in current driver,
+	 * both HAL and Zephyr DMA drivers should be configured.
+	 * The required configuration for Zephyr DMA driver should only provide
+	 * the minimum information to inform the DMA slot will be in used and
+	 * how to route callbacks.
+	 */
+
+	if (dev_data->dma.name != NULL) {
+		/* Get the binding to the DMA device */
+		dev_data->dma.dev = device_get_binding(dev_data->dma.name);
+		if (!dev_data->dma.dev) {
+			LOG_ERR("%s device not found", dev_data->dma.name);
+			return -ENODEV;
+		}
+	}
+
+	/* Proceed to the minimum Zephyr DMA driver init */
+	dma_cfg.user_data = &hdma;
+	/* HACK: Following field is used to inform driver that it is overridden */
+	dma_cfg.linked_channel = 0x7F;
+	ret = dma_config(dev_data->dma.dev, dev_data->dma.channel, &dma_cfg);
+	if (ret != 0) {
+		return ret;
+	}
+
+	/* Proceed to the HAL DMA driver init */
+	if (dma_cfg.source_data_size != dma_cfg.dest_data_size) {
+		LOG_ERR("Source and destination data sizes not aligned");
+		return -EINVAL;
+	}
+
+	int index = find_lsb_set(dma_cfg.source_data_size) - 1;
+
+	hdma.Init.PeriphDataAlignment = table_p_size[index];
+	hdma.Init.MemDataAlignment = table_m_size[index];
+	hdma.Init.Request = dma_cfg.dma_slot;
+	hdma.Init.PeriphInc = DMA_PINC_DISABLE;
+	hdma.Init.MemInc = DMA_MINC_ENABLE;
+	hdma.Init.Mode = DMA_NORMAL;
+	hdma.Init.Priority = dma_cfg.channel_priority;
+	hdma.Instance = DMA1_Channel5;
+
+	/* Initialize DMA HAL */
+	__HAL_LINKDMA(&dev_data->hqspi, hdma, hdma);
+
+	HAL_DMA_Init(&hdma);
 
 	dev_data->hqspi.Init.ClockPrescaler = prescaler;
 
@@ -744,6 +831,31 @@ static int flash_stm32_qspi_init(const struct device *dev)
 	return 0;
 }
 
+#define DMA_CHANNEL_CONFIG(id, dir)					\
+		DT_INST_DMAS_CELL_BY_NAME(id, dir, channel_config)
+
+#define QSPI_DMA_CHANNEL_INIT(index, dir)				\
+	.name = DT_INST_DMAS_LABEL_BY_NAME(index, dir),			\
+	.channel = DT_INST_DMAS_CELL_BY_NAME(index, dir, channel),	\
+	.cfg = {							\
+		.dma_slot = DT_INST_DMAS_CELL_BY_NAME(index, dir, slot),\
+		.source_data_size = STM32_DMA_CONFIG_PERIPHERAL_DATA_SIZE( \
+					DMA_CHANNEL_CONFIG(index, dir)),\
+		.dest_data_size = STM32_DMA_CONFIG_MEMORY_DATA_SIZE(    \
+					DMA_CHANNEL_CONFIG(index, dir)),\
+		.channel_priority = STM32_DMA_CONFIG_PRIORITY(		\
+					DMA_CHANNEL_CONFIG(index, dir)),\
+		.dma_callback = qspi_dma_callback,			\
+	},								\
+
+#define QSPI_DMA_CHANNEL(id, dir)					\
+	.dma = {							\
+		COND_CODE_1(DT_INST_DMAS_HAS_NAME(id, dir),		\
+			(QSPI_DMA_CHANNEL_INIT(id, dir)),		\
+			(NULL))						\
+		},
+
+
 #define QSPI_FLASH_MODULE(drv_id, flash_id) \
 	DT_CHILD(DT_DRV_INST(drv_id), qspi_nor_flash_##flash_id)
 
@@ -776,8 +888,9 @@ static struct flash_stm32_qspi_data flash_stm32_qspi_dev_data = {
 			.SampleShifting = QSPI_SAMPLE_SHIFTING_NONE,
 			.ChipSelectHighTime = QSPI_CS_HIGH_TIME_1_CYCLE,
 			.ClockMode = QSPI_CLOCK_MODE_0,
-		},
+			},
 	},
+	QSPI_DMA_CHANNEL(0, tx_rx)
 };
 
 DEVICE_AND_API_INIT(flash_stm32_qspi, DT_INST_LABEL(0),

@@ -7,6 +7,8 @@ config FLASH_STM32_QSPI
 	bool "STM32 Quad SPI Flash driver"
 	depends on SOC_FAMILY_STM32
 	select USE_STM32_HAL_QSPI
+	select USE_STM32_HAL_DMA
+	select DMA
 	select FLASH_HAS_DRIVER_ENABLED
 	help
 	  Enable Quad SPI support on the STM32 family of processors.
