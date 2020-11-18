@@ -229,11 +229,18 @@
 	status = "okay";
 };
 
+&dma1 {
+	status = "okay";
+};
+
 &quadspi {
 	pinctrl-0 = <&quadspi_clk_pe10 &quadspi_ncs_pe11
 		     &quadspi_bk1_io0_pe12 &quadspi_bk1_io1_pe13
 		     &quadspi_bk1_io2_pe14 &quadspi_bk1_io3_pe15>;
 	status = "okay";
+
+	dmas = <&dma1 5 5 0x0000 0x03>;
+	dma-names = "tx_rx";
 
 	mx25r6435f: qspi-nor-flash@0 {
 		compatible = "jedec,spi-nor";
