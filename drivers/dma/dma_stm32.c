@@ -97,14 +97,15 @@ static void dma_stm32_irq_handler(const struct device *dev, uint32_t id)
 	}
 
 	/* the dma stream id is in range from STREAM_OFFSET..<dma-requests> */
-	if (dma_stm32_is_tc_active(dma, id)) {
-		dma_stm32_clear_tc(dma, id);
+	if (dma_stm32_is_ht_active(dma, id)) {
+		stream->dma_callback(dev, stream->user_data, callback_arg, 0);
+		dma_stm32_clear_ht(dma, id);
+	} else if (dma_stm32_is_tc_active(dma, id)) {
 #ifdef CONFIG_DMAMUX_STM32
 		stream->busy = false;
 #endif
 		stream->dma_callback(dev, stream->user_data, callback_arg, 0);
-	} else if (dma_stm32_is_ht_active(dma, id)) {
-		dma_stm32_clear_ht(dma, id);
+		dma_stm32_clear_tc(dma, id);
 	} else if (stm32_dma_is_unexpected_irq_happened(dma, id)) {
 		LOG_ERR("Unexpected irq happened.");
 		stream->dma_callback(dev, stream->user_data,
