@@ -318,7 +318,7 @@ static inline void stm32_clock_control_mco_init(void)
 #endif /* CONFIG_CLOCK_STM32_MCO2_SRC_NOCLOCK */
 }
 
-static int stm32_clock_control_init(const struct device *dev)
+int stm32_clock_control_init(const struct device *dev)
 {
 	LL_UTILS_ClkInitTypeDef s_ClkInitStruct;
 	uint32_t hclk_prescaler;
@@ -594,6 +594,40 @@ static int stm32_clock_control_init(const struct device *dev)
 
 	return 0;
 }
+
+#ifdef CONFIG_PM_DEVICE
+/**
+ * @brief control the clocks after low power
+ *
+ * This routine is called to put the device in low power mode.
+ *
+ * @param dev CLOCK device struct
+ *
+ * @return 0
+ */
+
+static int clock_stm32_pm_control(const struct device *dev,
+					 uint32_t ctrl_command,
+					 void *context, device_pm_cb cb,
+					 void *arg)
+{
+	int ret = 0;
+
+	if (ctrl_command == DEVICE_PM_SET_POWER_STATE) {
+		if (*((uint32_t *)context) == DEVICE_PM_ACTIVE_STATE) {
+			//ret = stm32_clock_control_init(dev);
+			//k_busy_wait(1000);
+		}
+	} else {
+		__ASSERT_NO_MSG(ctrl_command == DEVICE_PM_GET_POWER_STATE);
+	}
+	if (cb) {
+		cb(dev, ret, context, arg);
+	}
+
+	return ret;
+}
+#endif /* CONFIG_PM_DEVICE */
 
 /**
  * @brief RCC device, note that priority is intentionally set to 1 so

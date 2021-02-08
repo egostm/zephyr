@@ -156,6 +156,9 @@ void stm32_setup_pins(const struct pin_config *pinconf,
 int stm32_dt_pinctrl_configure(const struct soc_gpio_pinctrl *pinctrl,
 			       size_t list_size, uint32_t base);
 
+int stm32_dt_pinctrl_configure_lp(const struct soc_gpio_pinctrl *pinctrl,
+			       size_t list_size, uint32_t base);
+
 #if DT_HAS_COMPAT_STATUS_OKAY(st_stm32f1_pinctrl)
 /**
  * @brief Helper function to check and apply provided pinctrl remap

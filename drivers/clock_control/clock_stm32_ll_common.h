@@ -21,17 +21,17 @@
 #endif
 
 #if CONFIG_CLOCK_STM32_MCO2_SRC_SYSCLK
-	#define MCO2_SOURCE		LL_RCC_MCO2SOURCE_SYSCLK
-#elif CONFIG_CLOCK_STM32_MCO2_SRC_PLLI2S
-	#define MCO2_SOURCE		LL_RCC_MCO2SOURCE_PLLI2S
+	#define MCO2_SOURCE		LL_RCC_MCO1SOURCE_SYSCLK
 #elif CONFIG_CLOCK_STM32_MCO2_SRC_HSE
-	#define MCO2_SOURCE		LL_RCC_MCO2SOURCE_HSE
+	#define MCO2_SOURCE		LL_RCC_MCO1SOURCE_HSE
 #elif CONFIG_CLOCK_STM32_MCO2_SRC_PLLCLK
-	#define MCO2_SOURCE		LL_RCC_MCO2SOURCE_PLLCLK
+	#define MCO2_SOURCE		LL_RCC_MCO1SOURCE_PLLCLK
 #endif
 
 void config_pll_init(LL_UTILS_PLLInitTypeDef *pllinit);
 void config_enable_default_clocks(void);
+
+int stm32_clock_control_init(const struct device *dev);
 
 /* Section for functions not available in every Cube packages */
 void LL_RCC_MSI_Disable(void);

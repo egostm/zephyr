@@ -59,6 +59,32 @@
 		sw0 = &user_button_1;
 		sw1 = &user_button_2;
 		sw2 = &user_button_3;
+
+	power-states {
+		stop0: stop0 {
+			compatible = "zephyr,power-state";
+			power-state-name = "suspend-to-idle";
+			min-residency-us = <500>;
+			substate-id = <0>;
+		};
+		stop1: stop1 {
+			compatible = "zephyr,power-state";
+			power-state-name = "suspend-to-idle";
+			min-residency-us = <5000>;
+			substate-id = <1>;
+		};
+		stop2: stop2 {
+			compatible = "zephyr,power-state";
+			power-state-name = "suspend-to-idle";
+			min-residency-us = <1000>;
+			substate-id = <2>;
+		};
+	};
+};
+
+&cpu0 {
+	cpu-power-states = <&stop0 &stop1 &stop2>;
+};
 	};
 };
 

@@ -35,6 +35,7 @@ __weak const char *const z_pm_core_devices[] = {
 #elif defined(CONFIG_NET_TEST)
 	"",
 #elif defined(CONFIG_SOC_SERIES_STM32L4X) || defined(CONFIG_SOC_SERIES_STM32WBX)
+	//DT_LABEL(DT_NODELABEL(rcc)),
 	"sys_clock",
 #endif
 	NULL

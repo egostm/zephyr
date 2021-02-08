@@ -1387,6 +1387,45 @@ static int uart_stm32_init(const struct device *dev)
 #endif
 }
 
+#ifdef CONFIG_PM_DEVICE
+/**
+ * @brief control the clocks after low power
+ *
+ * This routine is called to put the device in low power mode.
+ *
+ * @param dev CLOCK device struct
+ *
+ * @return 0
+ */
+
+static int uart_stm32_pm_control(const struct device *dev,
+					 uint32_t ctrl_command,
+					 void *context, device_pm_cb cb,
+					 void *arg)
+{
+	USART_TypeDef *UartInstance = UART_STRUCT(dev);
+	const struct uart_stm32_config *config = DEV_CFG(dev);
+	int ret = 0;
+
+	if (ctrl_command == DEVICE_PM_SET_POWER_STATE) {
+		if (*((uint32_t *)context) == DEVICE_PM_ACTIVE_STATE) {
+			uart_stm32_init(dev);
+		} else {
+			while (!LL_USART_IsActiveFlag_TC(UartInstance));
+			LL_USART_Disable(UartInstance);
+			stm32_dt_pinctrl_configure_lp(config->pinctrl_list, config->pinctrl_list_size, (uint32_t)UART_STRUCT(dev));
+		}
+	} else {
+		__ASSERT_NO_MSG(ctrl_command == DEVICE_PM_GET_POWER_STATE);
+	}
+	if (cb) {
+		cb(dev, ret, context, arg);
+	}
+
+	return ret;
+}
+#endif /* CONFIG_PM_DEVICE */
+
 #ifdef CONFIG_UART_ASYNC_API
 #define DMA_CHANNEL_CONFIG(id, dir)					\
 	DT_INST_DMAS_CELL_BY_NAME(id, dir, channel_config)
@@ -1481,7 +1520,8 @@ static struct uart_stm32_data uart_stm32_data_##index = {		\
 									\
 DEVICE_DT_INST_DEFINE(index,						\
 		    &uart_stm32_init,					\
-		    device_pm_control_nop,				\
+		    uart_stm32_pm_control,				\
+		    /* device_pm_control_nop, */			\
 		    &uart_stm32_data_##index, &uart_stm32_cfg_##index,	\
 		    PRE_KERNEL_1, CONFIG_KERNEL_INIT_PRIORITY_DEVICE,	\
 		    &uart_stm32_driver_api);				\

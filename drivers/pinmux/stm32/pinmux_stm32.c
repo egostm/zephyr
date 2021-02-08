@@ -198,6 +198,50 @@ int stm32_dt_pinctrl_configure(const struct soc_gpio_pinctrl *pinctrl,
 	return 0;
 }
 
+int stm32_dt_pinctrl_configure_lp(const struct soc_gpio_pinctrl *pinctrl,
+			       size_t list_size, uint32_t base)
+{
+	const struct device *clk;
+	uint32_t pin, mux;
+	uint32_t func = 0;
+
+	if (!list_size) {
+		/* Empty pinctrl. Exit */
+		return 0;
+	}
+
+#if DT_HAS_COMPAT_STATUS_OKAY(st_stm32f1_pinctrl)
+	if (stm32_dt_pinctrl_remap(pinctrl, list_size, base)) {
+		/* Wrong remap config. Exit */
+		return -EINVAL;
+	}
+#else
+	ARG_UNUSED(base);
+#endif /* DT_HAS_COMPAT_STATUS_OKAY(st_stm32f1_pinctrl) */
+
+	/* make sure to enable port clock first */
+	clk = device_get_binding(STM32_CLOCK_CONTROL_NAME);
+
+	for (int i = 0; i < list_size; i++) {
+		mux = pinctrl[i].pinmux;
+
+#if DT_HAS_COMPAT_STATUS_OKAY(st_stm32f1_pinctrl)
+		func = pinctrl[i].pincfg | STM32_MODE_INPUT | STM32_CNF_IN_ANALOG;
+#else
+		func = STM32_MODER_ANALOG_MODE;
+#endif /* DT_HAS_COMPAT_STATUS_OKAY(st_stm32f1_pinctrl) */
+
+		pin = STM32PIN(STM32_DT_PINMUX_PORT(mux),
+			       STM32_DT_PINMUX_LINE(mux));
+
+		enable_port(STM32_PORT(pin), clk);
+
+		stm32_pin_configure(pin, func, STM32_DT_PINMUX_FUNC(mux));
+	}
+
+	return 0;
+}
+
 #if DT_HAS_COMPAT_STATUS_OKAY(st_stm32f1_pinctrl)
 /**
  * @brief Helper function to check and apply provided pinctrl remap

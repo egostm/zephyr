@@ -50,23 +50,29 @@
 	};
 
 	power-states {
-		idle: idle {
+		stop0: stop0 {
 			compatible = "zephyr,power-state";
 			power-state-name = "suspend-to-idle";
-			min-residency-us = <1000>;
-			substate-id = <2>;
+			min-residency-us = <1500>;
+			substate-id = <0>;
 		};
-
-		standby: standby {
+		stop1: stop1 {
 			compatible = "zephyr,power-state";
-			power-state-name = "standby";
+			power-state-name = "suspend-to-idle";
 			min-residency-us = <5000>;
+			substate-id = <1>;
+		};
+		stop2: stop2 {
+			compatible = "zephyr,power-state";
+			power-state-name = "suspend-to-idle";
+			min-residency-us = <10000>;
+			substate-id = <2>;
 		};
 	};
 };
 
 &cpu0 {
-	cpu-power-states = <&idle &standby>;
+	cpu-power-states = <&stop0 &stop1 &stop2>;
 };
 
 &usart1 {

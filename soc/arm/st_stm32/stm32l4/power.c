@@ -99,6 +99,8 @@ void pm_power_state_exit_post_ops(struct pm_state_info info)
 		}
 	}
 
+	stm32_clock_control_init(0);
+
 	/*
 	 * System is now in active mode.
 	 * Reenable interrupts which were disabled
