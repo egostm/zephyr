@@ -33,7 +33,7 @@
 #define z_mco1_prescaler(v) LL_RCC_MCO1_DIV_ ## v
 #define mco1_prescaler(v) z_mco1_prescaler(v)
 
-#define z_mco2_prescaler(v) LL_RCC_MCO2_DIV_ ## v
+#define z_mco2_prescaler(v) LL_RCC_MCO1_DIV_ ## v
 #define mco2_prescaler(v) z_mco2_prescaler(v)
 
 #ifdef CONFIG_SOC_SERIES_STM32WBX

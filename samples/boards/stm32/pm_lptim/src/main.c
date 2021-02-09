@@ -13,13 +13,13 @@
 #include <drivers/gpio.h>
 #include <sys/printk.h>
 
-const struct device *gpio_bn, *gpio_led;
+const struct device *gpio_bn, *gpio_led, *gpio_mco;
 
 bool ready_to_sleep;
 
 /* in msec */
 /* setting to K_TICKS_FOREVER willl activate the deepsleep mode */
-#define SLEEP_TIME 11000
+#define SLEEP_TIME 4000
 
 #define DEMO_DESCRIPTION	\
 	"Demo Description\n"	\
@@ -51,6 +51,11 @@ bool ready_to_sleep;
 #define PIN0	DT_GPIO_PIN(LED0_NODE, gpios)
 #define LED0_FLAGS DT_GPIO_FLAGS(LED0_NODE, gpios)
 
+#define MCO_NODE DT_ALIAS(mco)
+#define MCO	DT_GPIO_LABEL(MCO_NODE, gpios)
+#define MCO_PIN	DT_GPIO_PIN(MCO_NODE, gpios)
+#define MCO_FLAGS DT_GPIO_FLAGS(MCO_FLAGS, gpios)
+
 static struct gpio_callback gpio_cb;
 
 void button_pressed(const struct device *dev, struct gpio_callback *cb,
@@ -68,12 +73,14 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb,
 /* Application main Thread */
 void main(void)
 {
+	bool back = false;
 
 	printk("\n\n*** Low power Management Demo on %s ***\n", CONFIG_BOARD);
 	printk(DEMO_DESCRIPTION);
 
 	ready_to_sleep = false;
 	gpio_bn = device_get_binding(SW);
+	gpio_mco = device_get_binding(MCO);
 
 	/* Configure Button 1 to wakeup from sleep mode */
 	gpio_pin_configure(gpio_bn, PIN, SW0_FLAGS | GPIO_INPUT);
@@ -92,6 +99,17 @@ void main(void)
 		return;
 	}
 
+	if (gpio_pin_configure(gpio_mco, MCO_PIN,
+			GPIO_OUTPUT_ACTIVE | MCO_FLAGS) < 0) {
+		return;
+	}
+
+	/* Set MCO PIN to default value */
+	gpio_pin_set(gpio_mco, MCO_PIN, 0);
+
+	gpio_pin_set(gpio_led, PIN0, 1);
+
+
 	/*
 	 * Start the demo.
 	 */
@@ -100,10 +118,18 @@ void main(void)
 		if (ready_to_sleep == true) {
 			gpio_pin_set(gpio_led, PIN0, 0);
 			ready_to_sleep = false;
+			back = true;
+			/* MCO pin set */
+			gpio_pin_set(gpio_mco, MCO_PIN, 1);
 			k_msleep(SLEEP_TIME);
 		}
 
-		gpio_pin_set(gpio_led, PIN0, 1);
-
+		if (back) {
+			gpio_pin_set(gpio_led, PIN0, 1);
+			printk("We're back !!\n");
+			/* MCO Pin reset */
+			gpio_pin_set(gpio_mco, MCO_PIN, 0);
+			back = false;
+		};
 	}
 }

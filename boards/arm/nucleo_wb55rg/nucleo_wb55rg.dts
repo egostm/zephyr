@@ -36,6 +36,10 @@
 			gpios = <&gpiob 1 GPIO_ACTIVE_HIGH>;
 			label = "User LED3";
 		};
+		mco_trigger: mco_trigger {
+			gpios = <&gpioc 13 GPIO_ACTIVE_HIGH>; /* Arduino D7 */
+			label = "MCO Trigger";
+		};
 	};
 
 	gpio_keys {
@@ -59,6 +63,8 @@
 		sw0 = &user_button_1;
 		sw1 = &user_button_2;
 		sw2 = &user_button_3;
+		mco = &mco_trigger;
+	};
 
 	power-states {
 		stop0: stop0 {
@@ -85,11 +91,16 @@
 &cpu0 {
 	cpu-power-states = <&stop0 &stop1 &stop2>;
 };
+
+&pinctrl{
+	mco1_pa8: mco1_pa8 {
+		pinmux = <STM32_PINMUX('A', 8, AF0)>;  /* Arduino D6 */
+		slew-rate = "very-high-speed";
 	};
 };
 
 &usart1 {
-	pinctrl-0 = <&usart1_tx_pb6 &usart1_rx_pb7>;
+	pinctrl-0 = <&usart1_tx_pb6 &usart1_rx_pb7 &mco1_pa8>;
 	current-speed = <115200>;
 	status = "okay";
 };

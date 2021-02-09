@@ -208,25 +208,21 @@ config CLOCK_STM32_MCO1_SRC_NOCLOCK
 
 config CLOCK_STM32_MCO1_SRC_LSE
 	bool "LSE"
-	depends on SOC_SERIES_STM32F4X
 	help
 	  Use LSE as source of MCO1
 
 config CLOCK_STM32_MCO1_SRC_HSE
 	bool "HSE"
-	depends on SOC_SERIES_STM32F4X
 	help
 	  Use HSE as source of MCO1
 
 config CLOCK_STM32_MCO1_SRC_HSI
 	bool "HSI"
-	depends on SOC_SERIES_STM32F4X
 	help
 	  Use HSI as source of MCO1
 
 config CLOCK_STM32_MCO1_SRC_PLLCLK
 	bool "PLLCLK"
-	depends on SOC_SERIES_STM32F4X
 	help
 	  Use PLLCLK as source of MCO1
 
@@ -236,7 +232,6 @@ config CLOCK_STM32_MCO1_DIV
 	int "MCO1 prescaler"
 	depends on !CLOCK_STM32_MCO1_SRC_NOCLOCK
 	default 1
-	range 1   5
 	help
 	  allowed values: 1, 2, 3, 4, 5
 
@@ -251,7 +246,6 @@ config CLOCK_STM32_MCO2_SRC_NOCLOCK
 
 config CLOCK_STM32_MCO2_SRC_SYSCLK
 	bool "SYSCLK"
-	depends on SOC_SERIES_STM32F4X
 	help
 	  Use SYSCLK as source of MCO2
 
@@ -279,7 +273,6 @@ config CLOCK_STM32_MCO2_DIV
 	int "MCO2 prescaler"
 	depends on !CLOCK_STM32_MCO2_SRC_NOCLOCK
 	default 1
-	range 1 5
 	help
 	  allowed values: 1, 2, 3, 4, 5
 
