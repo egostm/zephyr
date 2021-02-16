@@ -12,7 +12,6 @@
  */
 
 #include <errno.h>
-
 #include <kernel.h>
 #include <device.h>
 #include <soc.h>
@@ -32,50 +31,34 @@
 /* base address for where GPIO registers start */
 #define GPIO_PORTS_BASE       (GPIOA_BASE)
 
-static const uint32_t ports_enable[STM32_PORTS_MAX] = {
-	STM32_PERIPH_GPIOA,
-	STM32_PERIPH_GPIOB,
-	STM32_PERIPH_GPIOC,
-#ifdef GPIOD_BASE
-	STM32_PERIPH_GPIOD,
-#else
-	STM32_PORT_NOT_AVAILABLE,
+#define DT_DRV_COMPAT st_stm32_gpio
+
+#if 0
+/* Ca, ca marche, mais c'est pas ce qu'on veut */
+#define GPIO_DEVICES(inst)		\
+	DEVICE_DT_INST_GET(inst),
+const struct device *enabled_gpio_ports[] = {
+	DT_INST_FOREACH_STATUS_OKAY(GPIO_DEVICES)
+};
 #endif
-#ifdef GPIOE_BASE
-	STM32_PERIPH_GPIOE,
-#else
-	STM32_PORT_NOT_AVAILABLE,
-#endif
-#ifdef GPIOF_BASE
-	STM32_PERIPH_GPIOF,
-#else
-	STM32_PORT_NOT_AVAILABLE,
-#endif
-#ifdef GPIOG_BASE
-	STM32_PERIPH_GPIOG,
-#else
-	STM32_PORT_NOT_AVAILABLE,
-#endif
-#ifdef GPIOH_BASE
-	STM32_PERIPH_GPIOH,
-#else
-	STM32_PORT_NOT_AVAILABLE,
-#endif
-#ifdef GPIOI_BASE
-	STM32_PERIPH_GPIOI,
-#else
-	STM32_PORT_NOT_AVAILABLE,
-#endif
-#ifdef GPIOJ_BASE
-	STM32_PERIPH_GPIOJ,
-#else
-	STM32_PORT_NOT_AVAILABLE,
-#endif
-#ifdef GPIOK_BASE
-	STM32_PERIPH_GPIOK,
-#else
-	STM32_PORT_NOT_AVAILABLE,
-#endif
+
+#define TOP_MACRO(gpio_port)						\
+	COND_CODE_1(DT_NODE_HAS_STATUS(DT_NODELABEL(gpio_port), okay), 	\
+		    (DEVICE_DT_GET(DT_NODELABEL(gpio_port))),		\
+		    ((const struct device *)NULL))
+
+const struct device *gpio_ports[STM32_PORTS_MAX] = {
+	TOP_MACRO(gpioa),
+	TOP_MACRO(gpiob),
+	TOP_MACRO(gpioc),
+	TOP_MACRO(gpiod),
+	TOP_MACRO(gpioe),
+	TOP_MACRO(gpiof),
+	TOP_MACRO(gpiog),
+	TOP_MACRO(gpioh),
+	TOP_MACRO(gpioi),
+	TOP_MACRO(gpioj),
+	TOP_MACRO(gpiok),
 };
 
 /**
@@ -88,6 +71,7 @@ static const uint32_t ports_enable[STM32_PORTS_MAX] = {
  */
 static int enable_port(uint32_t port, const struct device *clk)
 {
+#if 0
 	/* enable port clock */
 	if (!clk) {
 		clk = device_get_binding(STM32_CLOCK_CONTROL_NAME);
@@ -103,6 +87,32 @@ static int enable_port(uint32_t port, const struct device *clk)
 	}
 
 	return clock_control_on(clk, (clock_control_subsys_t *) &pclken);
+#else
+	return gpio_stm32_clock_toggle(gpio_ports[port], true);
+#endif
+}
+
+static int disable_port(uint32_t port, const struct device *clk)
+{
+#if 0
+	/* enable port clock */
+	if (!clk) {
+		clk = device_get_binding(STM32_CLOCK_CONTROL_NAME);
+	}
+
+	struct stm32_pclken pclken;
+
+	pclken.bus = STM32_CLOCK_BUS_GPIO;
+	pclken.enr = ports_enable[port];
+
+	if (pclken.enr == STM32_PORT_NOT_AVAILABLE) {
+		return -EIO;
+	}
+
+	return clock_control_off(clk, (clock_control_subsys_t *) &pclken);
+#else
+	return gpio_stm32_clock_toggle(gpio_ports[port], false);
+#endif
 }
 
 static int stm32_pin_configure(uint32_t pin, uint32_t func, uint32_t altf)
@@ -190,9 +200,11 @@ int stm32_dt_pinctrl_configure(const struct soc_gpio_pinctrl *pinctrl,
 		pin = STM32PIN(STM32_DT_PINMUX_PORT(mux),
 			       STM32_DT_PINMUX_LINE(mux));
 
-		enable_port(STM32_PORT(pin), clk);
+		gpio_stm32_clock_toggle(gpio_ports[STM32_PORT(pin)], true);
 
 		stm32_pin_configure(pin, func, STM32_DT_PINMUX_FUNC(mux));
+
+		gpio_stm32_clock_toggle(gpio_ports[STM32_PORT(pin)], false);
 	}
 
 	return 0;
@@ -447,11 +459,10 @@ int stm32_dt_pinctrl_remap(const struct soc_gpio_pinctrl *pinctrl,
  *
  * @return 0 on success, error otherwise
  */
-int z_pinmux_stm32_set(uint32_t pin, uint32_t func,
-				const struct device *clk)
+int z_pinmux_stm32_set(uint32_t pin, uint32_t func)
 {
 	/* make sure to enable port clock first */
-	if (enable_port(STM32_PORT(pin), clk)) {
+	if (gpio_stm32_clock_toggle(gpio_ports[STM32_PORT(pin)], true)) {
 		return -EIO;
 	}
 
@@ -467,14 +478,10 @@ int z_pinmux_stm32_set(uint32_t pin, uint32_t func,
 void stm32_setup_pins(const struct pin_config *pinconf,
 		      size_t pins)
 {
-	const struct device *clk;
 	int i;
-
-	clk = device_get_binding(STM32_CLOCK_CONTROL_NAME);
 
 	for (i = 0; i < pins; i++) {
 		z_pinmux_stm32_set(pinconf[i].pin_num,
-				  pinconf[i].mode,
-				  clk);
+				  pinconf[i].mode);
 	}
 }

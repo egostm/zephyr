@@ -31,6 +31,56 @@
  * @brief Common GPIO driver for STM32 MCUs.
  */
 
+
+/**
+ * @brief GPIO port clock handling
+ */
+int gpio_stm32_clock_toggle(const struct device *dev, bool on)
+{
+	const struct gpio_stm32_config *cfg = dev->config;
+	struct gpio_stm32_data *data = dev->data;
+	int ret = 0;
+
+	/* enable clock for subsystem */
+	const struct device *clk = device_get_binding(STM32_CLOCK_CONTROL_NAME);
+
+	if (on) {
+		if (data->client_count == 0) {
+			ret = clock_control_on(clk,
+		     			(clock_control_subsys_t *)&cfg->pclken);
+#ifdef PWR_CR2_IOSV
+			if (cfg->port == STM32_PORTG) {
+				/* Port G[15:2] requires external power supply */
+				/* Cf: L4XX RM, §5.1 Power supplies */
+				z_stm32_hsem_lock(CFG_HW_RCC_SEMID,
+						  HSEM_LOCK_DEFAULT_RETRY);
+				LL_PWR_EnableVddIO2();
+				z_stm32_hsem_unlock(CFG_HW_RCC_SEMID);
+			}
+#endif  /* PWR_CR2_IOSV */
+		}
+		data->client_count ++;
+	} else {
+		data->client_count --;
+		if (data->client_count == 0) {
+			ret = clock_control_off(clk,
+					(clock_control_subsys_t *)&cfg->pclken);
+#ifdef PWR_CR2_IOSV
+			if (cfg->port == STM32_PORTG) {
+				/* Port G[15:2] requires external power supply */
+				/* Cf: L4XX RM, §5.1 Power supplies */
+				z_stm32_hsem_lock(CFG_HW_RCC_SEMID,
+						  HSEM_LOCK_DEFAULT_RETRY);
+				LL_PWR_DisableVddIO2();
+				z_stm32_hsem_unlock(CFG_HW_RCC_SEMID);
+			}
+#endif  /* PWR_CR2_IOSV */
+		}
+	}
+
+	return ret;
+}
+
 /**
  * @brief EXTI interrupt callback
  */
@@ -426,6 +476,10 @@ static int gpio_stm32_config(const struct device *dev,
 		goto exit;
 	}
 
+	if ((flags & GPIO_DISCONNECTED) == 0 ) {
+		err = gpio_stm32_clock_toggle(dev, true);
+	}
+
 	if ((flags & GPIO_OUTPUT) != 0) {
 		if ((flags & GPIO_OUTPUT_INIT_HIGH) != 0) {
 			gpio_stm32_port_set_bits_raw(dev, BIT(pin));
@@ -435,6 +489,10 @@ static int gpio_stm32_config(const struct device *dev,
 	}
 
 	gpio_stm32_configure(cfg->base, pin, pincfg, 0);
+
+	if ((flags & GPIO_DISCONNECTED) != 0) {
+		err = gpio_stm32_clock_toggle(dev, false);
+	}
 
 exit:
 	return err;
@@ -456,8 +514,16 @@ static int gpio_stm32_pin_interrupt_configure(const struct device *dev,
 			stm32_exti_unset_callback(pin);
 			stm32_exti_trigger(pin, STM32_EXTI_TRIG_NONE);
 		}
-		/* else: No irq source configured for pin. Nothing to disable */
+
+		/* Disable clock */
+		err = gpio_stm32_clock_toggle(dev, false);
+
 		goto exit;
+	}
+
+	/* Enable clock */
+	if (gpio_stm32_clock_toggle(dev, true) != 0) {
+			err = -EIO;
 	}
 
 	/* Level trigger interrupts not supported */
@@ -525,35 +591,10 @@ static const struct gpio_driver_api gpio_stm32_driver = {
  */
 static int gpio_stm32_init(const struct device *device)
 {
-	const struct gpio_stm32_config *cfg = device->config;
 	struct gpio_stm32_data *data = device->data;
 
 	data->dev = device;
-
-	/* enable clock for subsystem */
-	const struct device *clk =
-		device_get_binding(STM32_CLOCK_CONTROL_NAME);
-
-	if (clock_control_on(clk,
-			     (clock_control_subsys_t *)&cfg->pclken) != 0) {
-		return -EIO;
-	}
-
-#ifdef PWR_CR2_IOSV
-	if (cfg->port == STM32_PORTG) {
-		/* Port G[15:2] requires external power supply */
-		/* Cf: L4XX RM, §5.1 Power supplies */
-		z_stm32_hsem_lock(CFG_HW_RCC_SEMID, HSEM_LOCK_DEFAULT_RETRY);
-		if (LL_APB1_GRP1_IsEnabledClock(LL_APB1_GRP1_PERIPH_PWR)) {
-			LL_PWR_EnableVddIO2();
-		} else {
-			LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
-			LL_PWR_EnableVddIO2();
-			LL_APB1_GRP1_DisableClock(LL_APB1_GRP1_PERIPH_PWR);
-		}
-		z_stm32_hsem_unlock(CFG_HW_RCC_SEMID);
-	}
-#endif  /* PWR_CR2_IOSV */
+	data->client_count = 0;
 
 	return 0;
 }

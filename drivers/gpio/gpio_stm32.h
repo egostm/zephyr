@@ -222,6 +222,7 @@ struct gpio_stm32_data {
 	const struct device *dev;
 	/* user ISR cb */
 	sys_slist_t cb;
+	int client_count;
 };
 
 /**
@@ -233,5 +234,6 @@ struct gpio_stm32_data {
  * @param altf Alternate function
  */
 int gpio_stm32_configure(uint32_t *base_addr, int pin, int conf, int altf);
+int gpio_stm32_clock_toggle(const struct device *dev, bool on);
 
 #endif /* ZEPHYR_DRIVERS_GPIO_GPIO_STM32_H_ */
