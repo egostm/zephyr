@@ -16,18 +16,18 @@
 #include "clock_stm32_ll_common.h"
 
 
-#ifdef CONFIG_CLOCK_STM32_SYSCLK_SRC_PLL
+#if STM32_SYSCLK_SRC_PLL
 
 /*
  * Select PLL source for STM32F1 Connectivity line devices (STM32F105xx and
  * STM32F107xx).
  * Both flags are defined in STM32Cube LL API. Keep only the selected one.
  */
-#ifdef CONFIG_CLOCK_STM32_PLL_SRC_PLL2
+#if STM32_PLL_SRC_PLL2
 #undef RCC_PREDIV1_SOURCE_HSE
 #else
 #undef RCC_PREDIV1_SOURCE_PLL2
-#endif /* CONFIG_CLOCK_STM32_PLL_SRC_PLL2 */
+#endif /* STM32_PLL_SRC_PLL2 */
 
 
 /**
@@ -49,7 +49,7 @@ void config_pll_init(LL_UTILS_PLLInitTypeDef *pllinit)
 	 * 9  -> LL_RCC_PLL_MUL_9   -> 0x001C0000
 	 * 13 -> LL_RCC_PLL_MUL_6_5 -> 0x00340000
 	 */
-	pllinit->PLLMul = ((CONFIG_CLOCK_STM32_PLL_MULTIPLIER - 2)
+	pllinit->PLLMul = ((STM32_PLL_MULTIPLIER - 2)
 					<< RCC_CFGR_PLLMULL_Pos);
 
 #ifdef CONFIG_SOC_STM32F10X_DENSITY_DEVICE
@@ -78,11 +78,11 @@ void config_pll_init(LL_UTILS_PLLInitTypeDef *pllinit)
 	 * ...
 	 * 16 -> LL_RCC_PREDIV_DIV_16 -> 0x0000000F
 	 */
-	pllinit->Prediv = CONFIG_CLOCK_STM32_PLL_PREDIV1 - 1;
+	pllinit->Prediv = STM32_PLL_PREDIV1 - 1;
 #endif /* CONFIG_SOC_STM32F10X_DENSITY_DEVICE */
 }
 
-#endif /* CONFIG_CLOCK_STM32_SYSCLK_SRC_PLL */
+#endif /* STM32_SYSCLK_SRC_PLL */
 
 /**
  * @brief Activate default clocks
