@@ -1,0 +1,30 @@
+# Copyright (c) 2021, Linaro ltd
+# SPDX-License-Identifier: Apache-2.0
+
+description: STM32WB PLL
+
+compatible: "st,stm32wb-pll-clock"
+
+include: st,stm32l4-pll-clock.yaml
+
+properties:
+    mul-n:
+      description: |
+          Main PLL multiplication factor for VCO
+          Valid range: 6 - 127
+
+    div-p:
+      description: |
+          Main PLL division factor for PLLSAI3CLK
+          (PLLSAI1 and PLLSAI2) input clock
+          Valid range: 2 - 32
+
+    div-q:
+      description: |
+          Main PLL division factor for PLL48M1CLK (48 MHz clock).
+          Valid range: 2 - 8
+
+    div-r:
+      description: |
+          Main PLL division factor for PLLCLK (system clock)
+          Valid range: 2 - 8
