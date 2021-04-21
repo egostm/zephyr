@@ -112,6 +112,16 @@ static int device_pm_request(const struct device *dev,
 		}
 	}
 
+	if (k_is_pre_kernel()) {
+		/* If we are being called before the kernel was initialized
+		 * we can assume that the system took care of initialized
+		 * devices properly. It means that all dependencies were
+		 * satisfied and this call just incremented the reference count
+		 * for this device.
+		 */
+		return 0;
+	}
+
 	k_work_submit(&dev->pm->work);
 
 	/* Return in case of Async request */
@@ -157,6 +167,14 @@ int device_pm_put_sync(const struct device *dev)
 
 void device_pm_enable(const struct device *dev)
 {
+	if (k_is_pre_kernel()) {
+		dev->pm->dev = dev;
+		dev->pm->enable = true;
+		atomic_set(&dev->pm->fsm_state, DEVICE_PM_STATE_SUSPENDED);
+		k_work_init(&dev->pm->work, pm_work_handler);
+		return;
+	}
+
 	k_sem_take(&dev->pm->lock, K_FOREVER);
 	dev->pm->enable = true;
 
@@ -177,6 +195,9 @@ void device_pm_enable(const struct device *dev)
 
 void device_pm_disable(const struct device *dev)
 {
+	__ASSERT(k_is_pre_kernel() == false, "Device should not be disabled "
+		 "before kernel is initialized");
+
 	k_sem_take(&dev->pm->lock, K_FOREVER);
 	dev->pm->enable = false;
 	/* Bring up the device before disabling the Idle PM */
