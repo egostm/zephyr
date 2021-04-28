@@ -79,6 +79,7 @@ static void pm_work_handler(struct k_work *work)
 		}
 		break;
 	case DEVICE_PM_STATE_SUSPENDING:
+		__fallthrough;
 	case DEVICE_PM_STATE_RESUMING:
 		/* Do nothing: We are waiting for device_pm_callback() */
 		break;
