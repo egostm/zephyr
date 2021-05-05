@@ -35,6 +35,14 @@
 	pinctrl-0 = <&usart1_tx_pa9 &usart1_rx_pa10>;
 };
 
+//&gpioa { status = "disabled";};
+//&gpiob { status = "disabled";};
+&gpioc { status = "disabled";};
+&gpiod { status = "disabled";};
+&gpioe { status = "disabled";};
+&gpiof { status = "disabled";};
+&gpioh { status = "disabled";};
+
 &lptim1 {
 	status = "okay";
 };
