@@ -13,3 +13,4 @@
 &usb {
 	status = "disabled";
 };
+
